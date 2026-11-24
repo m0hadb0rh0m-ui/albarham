@@ -130,3 +130,15 @@ test('release keeps footer identity and deferred scripts in dependency order', (
   assert.match(js,/new IntersectionObserver/);
   assert.match(js,/im.fetchPriority = priority \? 'high' : 'low'/);
 });
+
+test('featured announcement does not inherit the light glass card surface', () => {
+  const css = fs.readFileSync('portal.css','utf8');
+  const glassRule = css.match(/([^{}]+)\{\s*background-color:var\(--surface\);background-image:var\(--glass-surface\);\s*border-color:var\(--glass-border\)/);
+  assert.ok(glassRule);
+  assert.ok(!glassRule[1].includes('.home-news-card'));
+  const release = css.slice(css.indexOf('/* Release 38:'));
+  assert.match(release,/\.home-news-card\{\s*background:#123b30/);
+  assert.match(release,/\.home-news-card h3\{color:#fffaf0\}/);
+  assert.match(release,/\.home-news-card p\{color:#f2f4ed\}/);
+  assert.match(html,/portal\.css\?v=38/);
+});
