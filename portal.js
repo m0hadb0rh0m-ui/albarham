@@ -206,6 +206,11 @@
     if (z.error) throw Error('تعذر تقديم الطلب. تحقق من تأكيد البريد وصحة الأرقام.');
   }
 
+  function validNewPassword(value) {
+    const length = Array.from(value).length;
+    return length >= 15 && length <= 128;
+  }
+
   function authError(err) {
     var code = err.code || err.error_code || '';
     var messages = {
@@ -214,13 +219,13 @@
       signup_disabled: 'إنشاء الحسابات معطل في إعدادات Supabase.',
       email_provider_disabled: 'مزود البريد غير مفعّل.',
       weak_password: 'كلمة المرور لا تحقق شروط الأمان.',
-      email_exists: 'البريد مسجل مسبقًا.',
-      user_already_exists: 'البريد مسجل مسبقًا.',
+      email_exists: 'استلمت خدمة التسجيل الطلب. تحقق من صندوق البريد والرسائل غير المرغوب فيها، ثم سجل الدخول.',
+      user_already_exists: 'استلمت خدمة التسجيل الطلب. تحقق من صندوق البريد والرسائل غير المرغوب فيها، ثم سجل الدخول.',
       captcha_failed: 'يلزم التحقق الأمني قبل التسجيل.',
       validation_failed: 'تحقق من صحة البريد والبيانات.'
     };
-    return messages[code] || ('تعذر التسجيل' + (code ? ' — رمز الخطأ: ' + code :
-      ' — تحقق من الاتصال بالإنترنت وخدمة المصادقة.'));
+    return Object.prototype.hasOwnProperty.call(messages, code) ? messages[code] :
+      'تعذر التسجيل. تحقق من الاتصال بالإنترنت وخدمة المصادقة.';
   }
   $('#regForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -235,7 +240,7 @@
     if (!/^\+[0-9]{7,15}$/.test(p)) return show('#r-msg', 'أدخل رقم الهاتف الصحيح واختر مفتاح الدولة.', 1);
     if (!/^\+[0-9]{7,15}$/.test(w)) return show('#r-msg', 'تحقق من رقم واتساب.', 1);
     if (!/^\S+@\S+\.\S+$/.test(email)) return show('#r-msg', 'أدخل بريدًا إلكترونيًا صحيحًا.', 1);
-    if (pw.length < 10) return show('#r-msg', 'كلمة المرور يجب ألا تقل عن عشرة أحرف.', 1);
+    if (!validNewPassword(pw)) return show('#r-msg', 'اختر كلمة مرور من ١٥ إلى ١٢٨ حرفًا.', 1);
     if (pw !== $('#r-pw2').value) return show('#r-msg', 'كلمتا المرور غير متطابقتين.', 1);
     if (!$('#r-ok').checked) return show('#r-msg', 'وافق على سياسة الخصوصية أولًا.', 1);
     b.disabled = true;
@@ -260,7 +265,10 @@
         })
       });
       var data = await response.json();
-      if (!response.ok) return show('#r-msg', authError(data), 1);
+      if (!response.ok) {
+        const duplicate = ['email_exists', 'user_already_exists'].includes(data.code || data.error_code);
+        return show('#r-msg', authError(data), duplicate ? 0 : 1);
+      }
       if (data.access_token && data.refresh_token && window.supabase) {
         var sess = await client().auth.setSession({
           access_token: data.access_token,
@@ -285,6 +293,7 @@
   $('#logForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     var b = this.querySelector('button[type=submit]');
+    if (b.disabled) return;
     b.disabled = true;
     try {
       var z = await client().auth.signInWithPassword({
@@ -298,7 +307,7 @@
         'security'
       ].includes(next) ? next : 'account';
     } catch (err) {
-      show('#l-msg', err.message, 1);
+      show('#l-msg', 'تعذر الدخول. تحقق من البيانات والاتصال وتأكيد البريد الإلكتروني.', 1);
     } finally {
       $('#l-pw').value = '';
       b.disabled = false;
@@ -568,7 +577,7 @@
   var pwBox = make('details', panel.querySelector('.wrap'));
   pwBox.className = 'card';
   pwBox.innerHTML =
-    '<summary>إعدادات وأمان الحساب</summary><form id="change-password"><label class="f">كلمة مرور جديدة<input type="password" minlength="10" autocomplete="new-password" required></label><button class="btn btn-dark" type="submit">تغيير كلمة المرور</button><p role="status"></p></form>';
+    '<summary>إعدادات وأمان الحساب</summary><form id="change-password"><label class="f">كلمة مرور جديدة<input type="password" minlength="15" maxlength="128" autocomplete="new-password" required></label><button class="btn btn-dark" type="submit">تغيير كلمة المرور</button><p role="status"></p></form>';
   pwBox.appendChild($('#logout'));
   $('#change-password').onsubmit = async function(e) {
     e.preventDefault();
@@ -576,6 +585,11 @@
       b = f.querySelector('button'),
       p = f.querySelector('input'),
       msg = f.querySelector('p');
+    if (b.disabled) return;
+    if (!validNewPassword(p.value)) {
+      msg.textContent = 'اختر كلمة مرور من ١٥ إلى ١٢٨ حرفًا.';
+      return;
+    }
     b.disabled = true;
     try {
       var z = await client().auth.updateUser({
@@ -676,6 +690,7 @@
     msg.setAttribute('role', 'status');
     f.onsubmit = async e => {
       e.preventDefault();
+      if (b.disabled) return;
       b.disabled = true;
       try {
         await fn();
@@ -1669,9 +1684,10 @@
   var changeForm = make('form', resetBox),
     newPass = field(changeForm, 'كلمة المرور الجديدة', 'password', 'password', 128);
   newPass.required = true;
-  newPass.minLength = 10;
+  newPass.minLength = 15;
   changeForm.hidden = true;
   formAction(changeForm, 'حفظ كلمة المرور الجديدة', async () => {
+    if (!validNewPassword(newPass.value)) throw Error('كلمة المرور غير صالحة');
     var z = await client().auth.updateUser({
       password: newPass.value
     });
@@ -1706,22 +1722,34 @@
   mfaLink.href = '#mfa';
   mfaLink.className = 'btn btn-dark';
   async function guardPrivate(fn) {
+    const requestedHash = location.hash;
     try {
       var session = await client().auth.getSession();
+      if (location.hash !== requestedHash) return;
       if (session.error) throw session.error;
       if (!session.data.session) {
+        clearPrivate();
         if (location.hash !== '#account') sessionStorage.setItem('family_after_login', location.hash.slice(1));
         location.hash = 'login';
         return;
       }
+      const verifiedUser = await client().auth.getUser();
+      if (location.hash !== requestedHash) return;
+      if (verifiedUser.error || !verifiedUser.data.user || verifiedUser.data.user.id !== session.data.session.user.id) throw Error('Session verification failed');
       var level = ok(await client().auth.mfa.getAuthenticatorAssuranceLevel());
+      if (location.hash !== requestedHash) return;
       if (level.nextLevel === 'aal2' && level.currentLevel !== 'aal2') {
         mfaReturn = location.hash;
         location.hash = 'mfa';
         return;
       }
+      const view = document.getElementById('v-' + requestedHash.slice(1));
+      view?.querySelector('.access-error')?.remove();
       await fn();
+      if (!recoveredSession || recoveredSession.user.id !== verifiedUser.data.user.id) clearPrivate();
     } catch (e) {
+      if (location.hash !== requestedHash) return;
+      clearPrivate();
       var view = document.getElementById('v-' + location.hash.slice(1));
       if (view && !view.querySelector('.access-error')) {
         var msg = make('p', view.querySelector('.wrap') || view,
@@ -2164,7 +2192,9 @@
     $('#completeForm').hidden = true;
     hubLink.hidden = true;
     adminShortcut.hidden = true;
+    certShortcut.hidden = true;
     printButton.hidden = true;
+    $('#change-password').reset();
   }
   guestLogin.hidden = true;
   signedAccount.hidden = true;
@@ -2223,7 +2253,7 @@
 
 ;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=29').catch(() => {});
+  navigator.serviceWorker.register('./sw.js?v=30').catch(() => {});
 }
 let installPrompt;
 window.addEventListener('beforeinstallprompt', e => {
