@@ -237,6 +237,10 @@
     return '';
   }
 
+  for (const form of [$('#regForm')]) {
+    make('p', form, 'تُفحص كلمة المرور الجديدة عند الإرسال عبر HIBP باستخدام خمسة محارف من بصمتها فقط؛ لا تُرسل كلمة المرور أو بصمتها الكاملة للخدمة.');
+  }
+
   function authError(err) {
     var code = err.code || err.error_code || '';
     var messages = {
@@ -1832,7 +1836,7 @@
     if (!validNewPassword(newPass.value)) throw Error('كلمة المرور غير صالحة');
     const password = newPass.value;
     const leakMessage = await requirePasswordScreen(password);
-    if (leakMessage) { alert(leakMessage); return; }
+    if (leakMessage) { alert(leakMessage); throw Error('Password screening failed'); }
     var z = await client().auth.updateUser({
       password: password
     });
