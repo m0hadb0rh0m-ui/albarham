@@ -23,6 +23,7 @@ jobs:
         run: |
           node --check portal.js
           node --check sw.js
+          node --test tests/security.test.cjs
           python3 - <<'PY'
           from pathlib import Path
           import re

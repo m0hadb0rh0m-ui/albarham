@@ -1,0 +1,48 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const html = fs.readFileSync('index.html', 'utf8');
+const js = fs.readFileSync('portal.js', 'utf8');
+
+test('HTML policy excludes unsafe script execution and mixed content', () => {
+  const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/i)[1];
+  const scripts = csp.split(';').find(x => x.trim().startsWith('script-src '));
+  assert.ok(!/unsafe-inline|unsafe-eval|\*/.test(scripts));
+  for (const rule of ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "upgrade-insecure-requests"]) assert.ok(csp.includes(rule));
+  assert.match(html, /name="referrer" content="no-referrer"/);
+  assert.doesNotMatch(html, /\s(onclick|onload|onerror|onsubmit)\s*=/i);
+});
+test('new password policy and server identity check remain present', () => {
+  const source = js.match(/function validNewPassword\(value\) \{[\s\S]*?\n  \}/)[0];
+  const check = vm.runInNewContext('(' + source + ')');
+  assert.equal(check('x'.repeat(14)), false);
+  assert.equal(check('x'.repeat(15)), true);
+  assert.equal(check('x'.repeat(129)), false);
+  assert.equal(check('🔒'.repeat(15)), true);
+  const guard = js.slice(js.indexOf('async function guardPrivate'), js.indexOf('async function loadMfa'));
+  assert.ok(guard.indexOf('auth.getUser()') < guard.indexOf('await fn()'));
+  assert.match(guard, /verifiedUser\.data\.user\.id !== session\.data\.session\.user\.id/);
+});
+test('service worker uses no-store, ignores out-of-scope and non-navigation requests', async () => {
+  const handlers = {};
+  let calls = [];
+  vm.runInNewContext(fs.readFileSync('sw.js','utf8'), {
+    self: { location: {origin:'https://example.test'}, registration:{scope:'https://example.test/albarham/'}, addEventListener:(name, fn)=>handlers[name]=fn },
+    URL, Response, fetch: async (req, opts) => { calls.push(opts); throw Error('offline'); }
+  });
+  let result;
+  const event = (url, method='GET', mode='navigate') => ({request:{url,method,mode},respondWith(p){result=p;}});
+  handlers.fetch(event('https://elsewhere.test/albarham/'));
+  handlers.fetch(event('https://example.test/other/'));
+  handlers.fetch(event('https://example.test/albarham/', 'POST'));
+  handlers.fetch(event('https://example.test/albarham/', 'GET', 'cors'));
+  assert.equal(calls.length, 0);
+  assert.equal(result, undefined);
+  handlers.fetch(event('https://example.test/albarham/'));
+  const response = await result;
+  assert.equal(calls[0].cache, 'no-store');
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/);
+});
