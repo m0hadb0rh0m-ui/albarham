@@ -1,0 +1,52 @@
+name: Portal security
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '21 3 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Validate portal JavaScript and security policy
+        run: |
+          node --check portal.js
+          node --check sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('index.html').read_text()
+          assert 'Content-Security-Policy' in html
+          assert "script-src 'self'" in html
+          assert "object-src 'none'" in html
+          assert not re.search(r'<script(?:\\s[^>]*)?>\\s*[^<\\s]', html, re.I), 'Unexpected inline JavaScript'
+          for p in [Path('index.html'), Path('portal.js'), Path('sw.js')]:
+              content = p.read_text()
+              assert not re.search(r'sb_secret_[A-Za-z0-9_-]{12,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----', content), 'Potential secret in ' + str(p)
+          print('Portal security baseline passed')
+          PY
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d
