@@ -1352,8 +1352,9 @@
 
   var photoCache = new Map();
   async function photoURLs(paths) {
-    var now = Date.now(),
-      missing = [...new Set(paths)].filter(p => !photoCache.has(p) || photoCache.get(p).until < now);
+    var now = Date.now();
+    for (const [key, entry] of photoCache) if (entry.until < now) photoCache.delete(key);
+    var missing = [...new Set(paths)].filter(p => !photoCache.has(p) || photoCache.get(p).until < now);
     if (missing.length) {
       var z = await client().storage.from('family-news').createSignedUrls(missing, 900);
       if (z.error) throw z.error;
@@ -1364,7 +1365,7 @@
         });
       }
     }
-    return paths.map(p => photoCache.get(p)?.url || null);
+    return paths.map(p => { const entry = photoCache.get(p); return entry && entry.until >= Date.now() ? entry.url : null; });
   }
 
   function showPhotoGallery(urls, title, index) {
@@ -1421,6 +1422,21 @@
     d.showModal();
   }
 
+  // Public news images are requested close to the viewport, not for the entire feed.
+  function nearViewport(element, callback, immediate = false) {
+    if (immediate || typeof IntersectionObserver !== 'function') { callback(); return; }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        observer.disconnect();
+        if (element.isConnected) callback();
+      }
+    }, {rootMargin:'250px 0px'});
+    observer.observe(element);
+    // Disconnect observers for galleries removed by navigation.
+    const cleanup = () => { observer.disconnect(); };
+    window.addEventListener('hashchange', cleanup, {once:true});
+  }
+
   function newsGallery(parent, paths, title, cover) {
     if (!paths.length) return;
     var g = make('div', parent);
@@ -1434,7 +1450,9 @@
       a.setAttribute('aria-label', 'عرض الصورة ' + (i + 1));
       var im = make('img', a);
       im.alt = title + ' — صورة ' + (i + 1);
-      im.loading = 'lazy';
+      const priority = parent.classList.contains('home-news-card') && i === 0;
+      im.loading = priority ? 'eager' : 'lazy';
+      im.fetchPriority = priority ? 'high' : 'low';
       im.decoding = 'async';
       a.disabled = true;
       a.onclick = () => {
@@ -1448,7 +1466,8 @@
     });
     if (cover && paths.length > 1) make('p', parent, 'اسحب لمشاهدة الصور • ' + paths.length + ' صور').className =
       'gallery-hint';
-    photoURLs(paths).then(result => {
+    const load = () => photoURLs(paths).then(result => {
+      if (!g.isConnected) return;
       urls = result;
       items.forEach(({
         a,
@@ -1460,9 +1479,11 @@
         } else a.remove();
       });
     }).catch(() => {
+      if (!g.isConnected) return;
       g.replaceChildren();
       make('p', g, 'تعذر تحميل الصور.');
     });
+    nearViewport(g, load, parent.classList.contains('home-news-card'));
   }
 
   async function loadPublicNews() {
