@@ -216,6 +216,85 @@ footer.site{background:var(--green-deep);color:var(--on-green2);padding-top:48px
 .vres dt{font-size:13px;color:var(--fg2)}.vres dd{margin:0;font-weight:700}
 .vres .big{width:56px;height:56px;margin-inline:auto}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* AL BARHAM — refined visual system, shared by public and authenticated views */
+:root{--radius:20px;--shadow:0 10px 32px rgba(15,49,40,.07);--shadow-hover:0 18px 42px rgba(15,49,40,.13)}
+body{font-size:16px;line-height:1.85;overflow-x:hidden}
+.wrap{max-width:1240px;padding-inline:clamp(18px,4vw,48px)}
+main{min-height:65vh}
+.topline{background:#09251e;border-bottom:1px solid rgba(196,165,106,.24);letter-spacing:.025em}
+header.site{position:sticky;top:0;z-index:30;box-shadow:0 5px 22px #09251e12}
+header.site .wrap{gap:18px;padding-block:16px}
+.brand{flex-shrink:0}.brand b{font-size:32px}.brand small{font-size:10px}
+.mark{width:54px;height:54px;border:2px solid #c4a56a;box-shadow:0 0 0 4px rgba(196,165,106,.12);background:linear-gradient(145deg,#225746,#09251e)}
+nav.main{gap:4px}nav.main a{border:0;border-radius:9px;padding:9px 11px;transition:background .2s,color .2s}
+nav.main a:hover,nav.main a[aria-current=page]{background:var(--band);color:var(--gold-ink)}
+.btn, .menu-btn, .seg button{min-height:46px;justify-content:center;text-align:center;line-height:1.5;border-radius:12px;font-weight:700;transition:transform .18s,box-shadow .18s,background .18s}
+.btn{padding:12px 23px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.btn.sm{padding:10px 16px;min-height:42px}
+.btn-gold{background:linear-gradient(135deg,#f0d5a0,#c5a365 60%,#a98645);color:#142b22;border:1px solid #d5b77b;box-shadow:0 5px 14px #8f71362b}
+.btn-dark{background:linear-gradient(145deg,#205344,#10382c);color:#fff;border:1px solid #35634e;box-shadow:0 5px 14px #10382c22}
+.btn-ghost{background:var(--surface);border:1px solid var(--line);color:var(--fg)}
+.btn-line{background:#ffffff0b;color:#f7eedc;border-color:#c4a56a}
+.btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 8px 22px #0c292429}
+.btn:active{transform:translateY(0)}.btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.menu-btn{padding:10px 17px;border:1px solid var(--gold);color:var(--fg);background:var(--band)}
+.band-green,.authside{background:radial-gradient(ellipse at 15% 15%,#c4a56a20,transparent 48%),linear-gradient(135deg,#09251e,#17473a 75%,#245447)}
+.hero{position:relative;border-bottom:3px solid var(--gold)}
+.hero .wrap{padding-block:clamp(44px,7vw,100px);gap:clamp(28px,5vw,70px)}
+.hero h1{font-size:clamp(38px,5.3vw,74px);line-height:1.37;letter-spacing:-.02em}
+.hero p.lead{font-size:clamp(16px,1.6vw,19px)}
+.crest .o{border-radius:22px;box-shadow:0 0 0 18px #c4a56a0d,0 0 65px #d4af3720}
+.crest .m{border-radius:14px}.crest .i{border-radius:12px}
+.pills span{background:#ffffff0b;border:1px solid #c4a56a33;padding:7px 12px;border-radius:30px}
+.sec{padding-block:clamp(38px,5.7vw,80px)}
+.sec.alt{border-block:1px solid var(--line)}
+.sec-head{margin-bottom:30px}.sec-head h2,.two h2{line-height:1.35}
+.eyebrow::before{content:"";width:18px;height:2px;background:currentColor;display:inline-block}
+.grid{gap:20px}
+.card,.welcome,.prompt,.empty,.vres,.note,.tablewrap,.frame,ol.steps li{border-radius:var(--radius);box-shadow:var(--shadow)}
+.card{padding:clamp(20px,3vw,32px);border:1px solid var(--line);overflow-wrap:anywhere}
+.card h2{font-size:clamp(24px,3vw,32px);line-height:1.5;margin-bottom:12px}
+.card h3{line-height:1.5;margin-top:10px}
+.card p+p{margin-top:8px}
+.card .btn{margin-block:8px 2px;margin-inline-end:5px}
+a.card{transition:transform .2s,border-color .2s,box-shadow .2s}
+a.card:hover{box-shadow:var(--shadow-hover);transform:translateY(-4px)}
+.ic{width:54px;height:54px;border-radius:15px;border:1px solid var(--line)}
+.more{padding:5px 0;border-bottom:1px solid var(--gold);width:max-content;max-width:100%}
+.banner{border-radius:26px;border:1px solid #c4a56a65;box-shadow:var(--shadow-hover)}
+.mcard{border-radius:20px}
+.phero{border-bottom:2px solid var(--gold)}.phero .wrap{padding-block:clamp(35px,5vw,66px)}
+.phero h1{font-size:clamp(36px,5vw,57px)}
+.authpage{min-height:70vh;background:var(--bg)}
+.authside{border-inline-end:2px solid var(--gold)}
+form.auth{background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:clamp(22px,4vw,48px);width:calc(100% - 36px);margin:36px auto}
+input:not([type=checkbox]):not([type=radio]),select,textarea{display:block;width:100%;min-width:0;min-height:46px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--fg);font:inherit;transition:border .2s,box-shadow .2s;margin-top:7px}
+textarea{min-height:120px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px #c4a56a22;outline:0}
+input[type=checkbox]{accent-color:var(--green);width:18px;height:18px;vertical-align:middle;margin-inline-end:7px}
+.phone select{width:100px;margin:0}.phone input{margin:0;flex:1}
+label.f{margin-block:10px 18px}
+.msg{border-radius:12px}
+#v-account .wrap,#v-admin .wrap,#v-member-hub .wrap,#v-member-services-admin .wrap,#v-certificate .wrap,#v-verify .wrap{max-width:1120px}
+#v-account .wrap>h1,#v-admin .wrap>h1,#v-member-hub .wrap>h1,#v-member-services-admin .wrap>h1,#v-certificate .wrap>h1,#v-verify .wrap>h1{font-size:clamp(30px,4vw,46px);padding:20px 25px;margin-bottom:24px;background:linear-gradient(135deg,#0c2924,#245447);border-radius:18px;border-inline-start:5px solid var(--gold);color:#f4e4bf;box-shadow:var(--shadow)}
+#v-account .wrap>.card,#v-account form#completeForm{margin:16px 0}
+#completeForm{padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:20px}
+#account-status{padding:15px 18px;border:1px solid var(--line);border-inline-start:4px solid var(--gold);border-radius:12px;background:var(--surface);font-weight:600;margin:12px 0}
+#v-account .wrap>.row,#v-certificate .wrap>.row{margin-block:18px}
+#v-admin .grid{margin-block:20px}
+#v-member-hub .card[style*="background"] p,#v-member-hub .card[style*="background"] h2{color:#f6e9cd}
+#v-member-hub .card[style*="background"] img{background:white;padding:6px;border-radius:6px}
+#v-member-hub .card[style*="background"] .btn{margin-top:14px}
+.cert-prev{border-radius:15px;box-shadow:var(--shadow-hover);padding:10px;max-width:640px}
+.cert-prev .in{border-radius:8px;padding:clamp(24px,5vw,45px);gap:10px}
+.cert-prev img{max-width:100%;height:auto}
+footer.site{border-top:3px solid var(--gold);background:linear-gradient(135deg,#09251e,#14392e)}
+footer.site a:hover{color:#f0d5a0}
+@media(max-width:1200px){nav.main,.acts{display:none}.menu-btn{display:block}header.site.open .wrap{flex-wrap:wrap}header.site.open nav.main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;order:3;max-height:52vh;overflow:auto}header.site.open .acts{display:flex;width:100%;order:4}.acts .btn{flex:1}}
+@media(max-width:600px){body{font-size:15px}.wrap{padding-inline:16px}.brand b{font-size:28px}.mark{width:44px;height:44px}header.site .wrap{padding-block:10px}.hero .wrap{padding-block:38px 32px}.hero .row>.btn{flex:1 1 100%}.crest{min-height:240px}.crest .o{width:min(190px,61%)}.crest .ar{font-size:36px}.pills{gap:8px;margin-top:22px}.pills span{font-size:12px;padding:5px 9px}.grid{gap:12px}.card{padding:19px}.authside{padding:30px 20px;border-inline-end:0;border-bottom:2px solid var(--gold)}form.auth{margin:20px auto;width:calc(100% - 24px)}.row>.btn{flex:1 1 auto}.btn{font-size:14px;padding:12px 16px}.banner{padding:24px 18px}.welcome,.prompt{padding:20px}.phero p{font-size:16px}.fg{gap:22px}.copy{font-size:12px}.cert-prev .in{padding:22px 12px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+@media print{header.site,.topline,footer.site{display:none!important}.cert-prev{box-shadow:none!important;border-radius:0!important}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -243,7 +322,7 @@ footer.site{background:var(--green-deep);color:var(--on-green2);padding-top:48px
     <a class="brand" href="#home"><span class="mark"><svg width="24" height="24"><use href="#i-crown"/></svg></span><span><b>آل برهم</b><small>AL BARHAM FAMILY</small></span></a>
     <nav class="main" id="nav" aria-label="التنقل الرئيسي"></nav>
     <div class="acts"><a class="btn btn-ghost sm" href="#login">دخول الأعضاء</a><a class="btn btn-gold sm" href="#register">طلب عضوية</a></div>
-    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav">القائمة</button>
+    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav"><span aria-hidden="true">☰</span> القائمة</button>
   </div>
 </header>
 
