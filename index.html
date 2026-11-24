@@ -363,6 +363,7 @@ html{padding-block:0!important;scroll-padding-top:0}
 @media print{body{padding-bottom:0!important}.mobile-dock{display:none!important}}
 
 .brand .brand-motto{font-family:var(--body);font-weight:600;font-size:11px;letter-spacing:0;line-height:1.5;color:var(--gold-ink);white-space:nowrap;margin-top:3px}.fg .brand .brand-motto{color:var(--gold-on-green)}@media(max-width:700px){header.site .brand .brand-motto{font-size:10px;letter-spacing:0;margin-top:2px}}
+.brand .brand-motto[lang=en]{font-family:Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:.11em;line-height:1.5;white-space:nowrap;direction:ltr;text-align:right}.fg .brand .brand-motto[lang=en]{color:var(--gold-on-green)}@media(max-width:700px){header.site .brand .brand-motto[lang=en]{font-size:8px;letter-spacing:.07em}}@media(max-width:340px){header.site .brand .brand-motto[lang=en]{font-size:7px;letter-spacing:.02em}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -387,7 +388,7 @@ html{padding-block:0!important;scroll-padding-top:0}
 <div class="topline"><div class="wrap"><span>آل برهم • أصالة الجذور وعهد الأجيال</span><span>البوابة العائلية الرقمية</span></div></div>
 <header class="site" id="hdr">
   <div class="wrap">
-    <a class="brand" href="#home"><span class="mark"><svg width="24" height="24"><use href="#i-crown"/></svg></span><span><b>آل برهم</b><small class="brand-motto">أصالةُ الجذور • عهدُ الأجيال</small></span></a>
+    <a class="brand" href="#home"><span class="mark"><svg width="24" height="24"><use href="#i-crown"/></svg></span><span><b>آل برهم</b><small class="brand-motto" lang="en" dir="ltr">AL BARHAM · OFFICIAL PORTAL</small></span></a>
     <nav class="main" id="nav" aria-label="التنقل الرئيسي"></nav>
     <div class="acts"><a class="btn btn-gold sm" href="#login">دخول / إنشاء حساب</a><a class="btn btn-gold sm" href="#register" hidden>طلب عضوية</a></div>
     <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav"><span aria-hidden="true">☰</span> القائمة</button>
@@ -542,7 +543,7 @@ html{padding-block:0!important;scroll-padding-top:0}
 
 <footer class="site">
   <div class="wrap fg">
-    <div><div class="brand"><span class="mark"><svg width="22" height="22"><use href="#i-crown"/></svg></span><span><b>آل برهم</b><small class="brand-motto">أصالةُ الجذور • عهدُ الأجيال</small></span></div><p style="margin-top:14px;max-width:340px">نصون إرث العائلة، ونوثّق ذاكرتها، ونُعزّز روابط أبنائها عبر الأجيال.</p></div>
+    <div><div class="brand"><span class="mark"><svg width="22" height="22"><use href="#i-crown"/></svg></span><span><b>آل برهم</b><small class="brand-motto" lang="en" dir="ltr">AL BARHAM · OFFICIAL PORTAL</small></span></div><p style="margin-top:14px;max-width:340px">نصون إرث العائلة، ونوثّق ذاكرتها، ونُعزّز روابط أبنائها عبر الأجيال.</p></div>
     <div><h4>استكشف</h4><a href="#heritage">العائلة والتراث</a><a href="#news">أخبار العائلة</a><a href="#community">المجتمع</a></div>
     <div><h4>المنصة</h4><a href="#membership">العضوية والتحقق</a><a href="#privacy">الخصوصية</a></div>
   </div>
@@ -697,4 +698,4 @@ html{padding-block:0!important;scroll-padding-top:0}
 })();
 </script>
 
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=21').catch(()=>{});}let installPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;const b=document.getElementById('install-app');if(b)b.hidden=false;});document.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='install-app';b.className='btn btn-gold sm';b.textContent='تثبيت تطبيق العائلة';b.hidden=!installPrompt;b.onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;b.hidden=true;}};document.querySelector('footer.site .copy').appendChild(b);});</script></body></html>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=22').catch(()=>{});}let installPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;const b=document.getElementById('install-app');if(b)b.hidden=false;});document.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='install-app';b.className='btn btn-gold sm';b.textContent='تثبيت تطبيق العائلة';b.hidden=!installPrompt;b.onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;b.hidden=true;}};document.querySelector('footer.site .copy').appendChild(b);});</script></body></html>
