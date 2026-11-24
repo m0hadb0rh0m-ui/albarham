@@ -246,6 +246,14 @@
     b.disabled = true;
     show('#r-msg', 'جارٍ الاتصال بخدمة التسجيل...', 0);
     try {
+      if (window.familyCaptcha.enabled) {
+        const captchaToken = await window.familyCaptcha.token(this);
+        const signup = await client().auth.signUp({email, password: pw, options: {emailRedirectTo: location.origin + location.pathname, data: {full_name: name, phone: p, whatsapp: w}, captchaToken}});
+        if (signup.error) return show('#r-msg', authError(signup.error), 1);
+        if (signup.data.session) { location.hash = 'account'; await account(); return; }
+        show('#r-msg', 'استلمت خدمة التسجيل الطلب. تحقق من صندوق البريد والرسائل غير المرغوب فيها، ثم سجل الدخول.', 0);
+        this.reset(); syncWa(); return;
+      }
       var endpoint = 'https://vfxxghfmkmgdqrczeowx.supabase.co/auth/v1/signup?redirect_to=' +
         encodeURIComponent(location.origin + location.pathname);
       var response = await fetch(endpoint, {
@@ -287,6 +295,7 @@
     } catch (err) {
       show('#r-msg', 'تعذر الوصول إلى خادم التسجيل. تحقق من الإنترنت ثم أعد المحاولة.', 1);
     } finally {
+      window.familyCaptcha.reset(this);
       b.disabled = false;
     }
   });
@@ -298,7 +307,8 @@
     try {
       var z = await client().auth.signInWithPassword({
         email: $('#l-mail').value.trim(),
-        password: $('#l-pw').value
+        password: $('#l-pw').value,
+        options: {captchaToken: await window.familyCaptcha.token(this)}
       });
       if (z.error) throw Error('تعذر الدخول. تأكد من البريد وكلمة المرور وتأكيد البريد الإلكتروني.');
       var next = sessionStorage.getItem('family_after_login');
@@ -310,6 +320,7 @@
       show('#l-msg', 'تعذر الدخول. تحقق من البيانات والاتصال وتأكيد البريد الإلكتروني.', 1);
     } finally {
       $('#l-pw').value = '';
+      window.familyCaptcha.reset(this);
       b.disabled = false;
     }
   });
@@ -1675,11 +1686,14 @@
     resetInput = field(resetForm, 'البريد الإلكتروني', 'email', 'email', 254);
   resetInput.required = true;
   formAction(resetForm, 'إرسال رابط الاستعادة', async () => {
-    var z = await client().auth.resetPasswordForEmail(resetInput.value.trim(), {
-      redirectTo: location.origin + location.pathname + '?page=reset'
-    });
-    if (z.error) throw z.error;
-    resetMsg.textContent = 'إذا كان الحساب موجودًا فستصلك رسالة الاستعادة.';
+    try {
+      var z = await client().auth.resetPasswordForEmail(resetInput.value.trim(), {
+        redirectTo: location.origin + location.pathname + '?page=reset',
+        captchaToken: await window.familyCaptcha.token(resetForm)
+      });
+      if (z.error) throw z.error;
+      resetMsg.textContent = 'إذا كان الحساب موجودًا فستصلك رسالة الاستعادة.';
+    } finally { window.familyCaptcha.reset(resetForm); }
   });
   var changeForm = make('form', resetBox),
     newPass = field(changeForm, 'كلمة المرور الجديدة', 'password', 'password', 128);
@@ -1695,6 +1709,14 @@
     changeForm.reset();
     location.hash = 'account';
   });
+
+  function prepareCaptcha() {
+    const routes = {'#register': $('#regForm'), '#login': $('#logForm'), '#reset': resetForm};
+    const form = routes[location.hash];
+    if (form && !form.hidden) window.familyCaptcha.prepare(form).catch(() => {});
+  }
+  window.addEventListener('hashchange', prepareCaptcha);
+  prepareCaptcha();
 
   function showReset() {
     resetMsg.textContent = changeForm.hidden ? 'أدخل بريد حسابك لاستعادة كلمة المرور.' : 'اختر كلمة مرور جديدة.';
@@ -1997,6 +2019,7 @@
     make('p', local, 'سياسة CSP في الصفحة: ' + (policy && policy.content.includes("object-src 'none'") ? 'موجودة' :
       'غير مكتشفة'));
     make('p', local, 'هذه مؤشرات للمتصفح، وليست اختبار اختراق.');
+    make('p', local, 'Turnstile: ' + (window.familyCaptcha.enabled ? 'مهيأ في الواجهة؛ يلزم التحقق من فرضه في Supabase.' : 'بانتظار إعداد مفتاح الموقع في Cloudflare.'));
     var gh = section(parent, 'نتائج فحص الكود في GitHub');
     var ghMsg = make('p', gh, 'يمكنك قراءة آخر نتيجة متاحة علنًا من سجل GitHub Actions.');
     ghMsg.setAttribute('role', 'status');
