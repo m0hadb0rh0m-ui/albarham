@@ -1,16 +1,19 @@
 (function () {
   'use strict';
-  const key = window.FAMILY_SECURITY_CONFIG?.turnstileSiteKey || '';
+  const config = window.FAMILY_SECURITY_CONFIG || {};
+  const provider = config.hcaptchaSiteKey ? 'hcaptcha' : 'turnstile';
+  const key = config.hcaptchaSiteKey || config.turnstileSiteKey || '';
+  const getApi = () => window[provider];
   const states = new WeakMap();
   let loading;
   function load() {
-    if (window.turnstile) return Promise.resolve(window.turnstile);
+    if (getApi()) return Promise.resolve(getApi());
     if (!loading) loading = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.src = provider === 'hcaptcha' ? 'https://js.hcaptcha.com/1/api.js?render=explicit&hl=ar' : 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       script.async = true;
       const timer = setTimeout(() => { script.remove(); loading = null; reject(Error('CAPTCHA unavailable')); }, 15000);
-      script.onload = () => { clearTimeout(timer); if (window.turnstile) resolve(window.turnstile); else { loading = null; reject(Error('CAPTCHA unavailable')); } };
+      script.onload = () => { clearTimeout(timer); if (getApi()) resolve(getApi()); else { loading = null; reject(Error('CAPTCHA unavailable')); } };
       script.onerror = () => { clearTimeout(timer); script.remove(); loading = null; reject(Error('CAPTCHA unavailable')); };
       document.head.appendChild(script);
     });
@@ -25,7 +28,7 @@
     form.insertBefore(container, form.querySelector('button[type="submit"]'));
     state.ready = load().then(api => {
       state.id = api.render(container, {
-        sitekey: key, theme: 'auto', language: 'ar',
+        sitekey: key, theme: provider === 'hcaptcha' ? 'light' : 'auto', ...(provider === 'turnstile' ? {language:'ar'} : {}),
         callback: token => { state.token = token; },
         'expired-callback': () => { state.token = ''; },
         'error-callback': () => { state.token = ''; }
@@ -47,8 +50,8 @@
     const state = states.get(form);
     if (state && state.id !== null) {
       state.token = '';
-      try { window.turnstile.reset(state.id); } catch (_) {}
+      try { getApi().reset(state.id); } catch (_) {}
     }
   }
-  window.familyCaptcha = Object.freeze({ enabled: Boolean(key), prepare, token, reset });
+  window.familyCaptcha = Object.freeze({ enabled: Boolean(key), provider, prepare, token, reset });
 })();

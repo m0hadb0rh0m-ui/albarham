@@ -8,7 +8,9 @@ const js = fs.readFileSync('portal.js', 'utf8');
 test('HTML policy excludes unsafe script execution and mixed content', () => {
   const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/i)[1];
   const scripts = csp.split(';').find(x => x.trim().startsWith('script-src '));
-  assert.ok(!/unsafe-inline|unsafe-eval|\*/.test(scripts));
+  assert.ok(!/unsafe-inline|unsafe-eval/.test(scripts));
+  const wildcards = scripts.trim().split(/\s+/).filter(x => x.includes('*'));
+  assert.deepEqual(wildcards, ['https://*.hcaptcha.com']);
   for (const rule of ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "upgrade-insecure-requests"]) assert.ok(csp.includes(rule));
   assert.match(html, /name="referrer" content="no-referrer"/);
   assert.doesNotMatch(html, /\s(onclick|onload|onerror|onsubmit)\s*=/i);
@@ -60,4 +62,29 @@ test('live header assessment does not treat missing headers as enabled', () => {
   });
   assert.equal(check(response).filter(x => x[1]).length, 6);
   assert.equal(check(new Headers({'Strict-Transport-Security':'max-age=0'}))[2][1], false);
+});
+
+test('Arabic search normalizes common orthography and diacritics', () => {
+  const src = js.slice(js.indexOf('function normalizeSearch('), js.indexOf('function attachSearch('));
+  const normalize = vm.runInNewContext('(' + src.trim() + ')');
+  assert.equal(normalize(' أَحْمَد '), 'احمد');
+  assert.equal(normalize('مُصطفى'), 'مصطفي');
+  assert.equal(normalize(null), '');
+});
+test('Vercel security headers and hCaptcha opt-in configuration', () => {
+  const config = JSON.parse(fs.readFileSync('vercel.json','utf8'));
+  const headers = Object.fromEntries(config.headers[0].headers.map(x=>[x.key,x.value]));
+  assert.equal(headers['X-Frame-Options'],'DENY');
+  assert.match(headers['Content-Security-Policy'], /frame-ancestors 'none'/);
+  assert.match(headers['Content-Security-Policy'], /https:\/\/\*\.hcaptcha\.com/);
+  const env = {window:{}};
+  vm.runInNewContext(fs.readFileSync('security-config.js','utf8'), env);
+  vm.runInNewContext(fs.readFileSync('captcha.js','utf8'), env);
+  assert.equal(env.window.familyCaptcha.enabled, false);
+});
+
+test('pinned external libraries carry SRI and anonymous CORS', () => {
+  assert.match(html, /supabase-js@2\.119\.2\/dist\/umd\/supabase\.js" integrity="sha384-[A-Za-z0-9+/]{64}" crossorigin="anonymous"/);
+  assert.match(js, /script\.integrity = 'sha384-[A-Za-z0-9+/]{64}'/);
+  assert.match(js, /script\.crossOrigin = 'anonymous'/);
 });
