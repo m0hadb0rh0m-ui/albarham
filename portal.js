@@ -394,6 +394,10 @@
       }
       adminMsg.textContent = 'الطلبات: ' + q.data.length + ' | المعتمدة: ' + q.data.filter(x => x.status ===
         'approved').length + ' | قيد المراجعة: ' + q.data.filter(x => x.status === 'under_review').length;
+      const stats = make('div', adminRows); stats.className = 'family-admin-stats';
+      for (const [label, n] of [['إجمالي الطلبات', q.data.length], ['معتمدة', q.data.filter(x=>x.status==='approved').length], ['قيد المراجعة', q.data.filter(x=>x.status==='under_review').length], ['تحتاج استكمالًا', q.data.filter(x=>x.status==='more_info').length]]) {
+        const stat = make('div', stats); stat.className = 'card'; make('strong', stat, String(n)); make('p', stat, label);
+      }
       var filterBar = make('div', adminRows);
       filterBar.className = 'row';
       var search = field(filterBar, 'بحث بالاسم أو رقم العضوية', 'search', 'search', 150),
@@ -718,6 +722,43 @@
     if (q.error) throw q.error;
     return q.data;
   }
+  function normalizeSearch(value) {
+    return String(value || '').normalize('NFKC').replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').toLocaleLowerCase().trim();
+  }
+
+  function attachSearch(parent, label, records) {
+    const search = field(parent, label, 'filter', 'search', 150);
+    const count = make('p', parent);
+    count.setAttribute('aria-live', 'polite');
+    const draw = () => {
+      const terms = normalizeSearch(search.value).split(/\s+/).filter(Boolean);
+      let visible = 0;
+      for (const record of records) {
+        record.el.hidden = !terms.every(term => normalizeSearch(record.text).includes(term));
+        if (!record.el.hidden) visible++;
+      }
+      count.textContent = 'النتائج: ' + visible + ' من ' + records.length;
+    };
+    search.addEventListener('input', draw);
+    draw();
+  }
+
+  function mountEventCalendar(parent, rows) {
+    const dated = rows.filter(x => x.event_at && Number.isFinite(Date.parse(x.event_at)))
+      .sort((a,b) => Date.parse(a.event_at) - Date.parse(b.event_at));
+    const upcoming = dated.filter(x => Date.parse(x.event_at) >= Date.now());
+    const card = make('div', parent); card.className = 'family-calendar';
+    make('h3', card, 'تقويم المناسبات القادمة');
+    if (!upcoming.length) make('p', card, 'لا توجد مناسبات مستقبلية محددة التاريخ.');
+    for (const event of upcoming) {
+      const row = make('div', card); row.className = 'family-calendar-row';
+      const time = make('time', row, new Intl.DateTimeFormat('ar', {dateStyle:'full', timeStyle:'short', timeZone:'Asia/Gaza'}).format(new Date(event.event_at)));
+      time.dateTime = new Date(event.event_at).toISOString();
+      make('strong', row, event.title);
+    }
+    make('p', card, 'تُعرض المواعيد بتوقيت غزة. هذه القائمة للأعضاء المعتمدين فقط.');
+  }
+
   async function loadHub() {
     hubBody.replaceChildren();
     make('p', hubBody, 'جارٍ تحميل خدمات العضوية…');
@@ -967,11 +1008,19 @@
           for (var k of ['archive', 'occasion']) {
             var c = section(hubBody, k === 'archive' ? 'الأرشيف الحصري' : 'المناسبات والتهاني');
             var rows = content.filter(x => x.kind === k);
+            if (k === 'occasion') mountEventCalendar(c, rows);
             if (!rows.length) make('p', c, 'لم تنشر الإدارة مواد بعد.');
+            const records = [];
+            const list = make('div', c);
             rows.forEach(x => {
-              make('h3', c, x.title);
-              make('p', c, x.body);
-              if (x.attachment_path) action(c, 'فتح المرفق', async function() {
+              const item = make('article', list);
+              item.className = 'family-content-record';
+              make('h3', item, x.title);
+              make('p', item, x.body);
+              if (x.source_note) make('p', item, 'المصدر: ' + x.source_note).className = 'family-source';
+              if (x.event_at) make('p', item, 'موعد المناسبة: ' + new Date(x.event_at).toLocaleString('ar', {timeZone:'Asia/Gaza'}));
+              records.push({el:item, text:[x.title,x.body,x.source_note].filter(Boolean).join(' ')});
+              if (x.attachment_path) action(item, 'تنزيل المرفق', async function() {
                 this.disabled = true;
                 try {
                   var file = ok(await client().storage.from('family-archive').download(x
@@ -991,6 +1040,7 @@
                 }
               });
             });
+            attachSearch(c, k === 'archive' ? 'بحث في الأرشيف والمصادر' : 'بحث في المناسبات', records);
           }
         } catch (e) {
           var existing = Array.from(hubBody.children).slice(beforeCount);
@@ -1113,12 +1163,17 @@
         t = field(f, 'العنوان', 'title', 'text', 150),
         b = field(f, 'المحتوى', 'body', 'textarea', 10000);
       t.required = b.required = true;
+      const sourceNote = field(f, 'مصدر الوثيقة أو مرجعها (اختياري)', 'source_note', 'text', 500);
+      const eventDate = field(f, 'موعد المناسبة (بتوقيت جهازك؛ تأكد من المنطقة الزمنية)', 'event_at', 'datetime-local');
+      eventDate.parentNode.hidden = k.value !== 'occasion';
       var file = field(f, 'مرفق اختياري للأرشيف (صورة أو PDF، حتى 10 MB)', 'attachment', 'file');
       file.accept = 'image/jpeg,image/png,image/webp,application/pdf';
       file.hidden = k.value !== 'archive';
       file.parentNode.hidden = file.hidden;
       k.onchange = () => {
         file.hidden = file.parentNode.hidden = k.value !== 'archive';
+        eventDate.parentNode.hidden = k.value !== 'occasion';
+        if (eventDate.parentNode.hidden) eventDate.value = '';
         if (file.hidden) file.value = '';
       };
       formAction(f, 'نشر للأعضاء', async () => {
@@ -1143,6 +1198,8 @@
             title: t.value,
             body: b.value,
             published: true,
+            source_note: sourceNote.value.trim() || null,
+            event_at: k.value === 'occasion' && eventDate.value ? new Date(eventDate.value).toISOString() : null,
             attachment_path: path
           }));
         } catch (e) {
@@ -1157,6 +1214,8 @@
       items.forEach(x => {
         var c = section(pub, x.title);
         make('p', c, x.published ? 'منشور' : 'غير منشور');
+        if (x.event_at) make('p', c, 'الموعد: ' + new Date(x.event_at).toLocaleString('ar', {timeZone:'Asia/Gaza'}));
+        if (x.source_note) make('p', c, 'المصدر: ' + x.source_note);
         action(c, x.published ? 'إخفاء' : 'إعادة نشر', async () => {
           try {
             ok(await client().from('family_member_content').update({
@@ -1383,6 +1442,7 @@
         return;
       }
       var visible = rows;
+      const newsRecords = [];
       if (selected) {
         var back = make('a', feed, 'جميع الأخبار');
         back.href = '#news';
@@ -1392,6 +1452,7 @@
       for (const x of visible) {
         var c = make('article', feed);
         c.className = 'card lux-news-card';
+        newsRecords.push({el:c, text:[x.title,x.body,newsLabels[x.category]].filter(Boolean).join(' ')});
         make('span', c, newsLabels[x.category] || 'خبر').className = 'lux-badge';
         make('h2', c, x.title).className = 'lux-title';
         make('time', c, new Date(x.created_at).toLocaleDateString('ar')).className = 'news-date';
@@ -1435,6 +1496,7 @@
         share.href = 'https://wa.me/?text=' + encodeURIComponent(x.title + '\n' + location.origin + location
           .pathname + '#news/' + x.id);
       }
+      if (!selected) { const searchBox = make('div', feed); feed.prepend(searchBox); attachSearch(searchBox, 'بحث في الأخبار المنشورة (آخر ٥٠ خبرًا)', newsRecords); }
     } catch (e) {
       if (epoch !== newsEpoch || (location.hash || '#home') !== hash) return;
       target.replaceChildren();
@@ -2012,7 +2074,7 @@
       ['RLS / RBAC / تخزين خاص', 'يمكن التحقق منها في الفحص المباشر.', 'warn'],
       ['DevSecOps / CodeQL', 'راجع نتيجة فحص الفرع المنشور أدناه.', 'warn'],
       ['WAF / WAAP / DDoS / Bot Management', 'ربط مزود حماية وتطبيق قواعده مطلوب.', 'warn'],
-      ['Turnstile', window.familyCaptcha.enabled ? 'مفتاح عام موجود؛ تحقق من فرض CAPTCHA في Auth.' : 'التكامل جاهز؛ يلزم مفتاح موقع وإعداد Auth.', 'warn'],
+      ['CAPTCHA (hCaptcha / Turnstile)', window.familyCaptcha.enabled ? 'مفتاح عام موجود؛ تحقق من فرض CAPTCHA في Auth.' : 'التكامل جاهز؛ يلزم مفتاح موقع وإعداد Auth.', 'warn'],
       ['Passkeys / FIDO2', 'يلزم ترقية SDK وإعداد المصادقة واختبارها.', 'warn'],
       ['PQC / RASP', 'يلزم دعم مزود TLS أو بيئة تشغيل خلفية مناسبة.', 'warn'],
       ['SIEM / XDR', 'سجل تدقيق داخلي موجود؛ يلزم تصدير آمن لمنصة مراقبة وتنبيه.', 'warn'],
@@ -2026,7 +2088,8 @@
     }
     const links = section(parent, 'استكمال إعدادات الحماية');
     for (const [name, url] of [
-      ['Cloudflare — إعداد الحماية الطرفية', 'https://dash.cloudflare.com/'],
+      ['Vercel — إعداد الحماية والاستضافة', 'https://vercel.com/dashboard'],
+      ['hCaptcha — حماية المصادقة', 'https://dashboard.hcaptcha.com/'],
       ['Supabase — إعداد المصادقة', 'https://supabase.com/dashboard/project/vfxxghfmkmgdqrczeowx/auth/providers'],
       ['Supabase — مستشار الأمان', 'https://supabase.com/dashboard/project/vfxxghfmkmgdqrczeowx/advisors/security'],
       ['GitHub — إعدادات المستودع', 'https://github.com/m0hadb0rh0m-ui/albarham/settings']
@@ -2068,7 +2131,7 @@
     make('p', local, 'سياسة CSP في الصفحة: ' + (policy && policy.content.includes("object-src 'none'") ? 'موجودة' :
       'غير مكتشفة'));
     make('p', local, 'هذه مؤشرات للمتصفح، وليست اختبار اختراق.');
-    make('p', local, 'Turnstile: ' + (window.familyCaptcha.enabled ? 'مهيأ في الواجهة؛ يلزم التحقق من فرضه في Supabase.' : 'بانتظار إعداد مفتاح الموقع في Cloudflare.'));
+    make('p', local, 'CAPTCHA: ' + (window.familyCaptcha.enabled ? 'مهيأ في الواجهة؛ يلزم التحقق من فرضه في Supabase.' : 'بانتظار مفتاح hCaptcha أو Turnstile.'));
     const headerResults = make('div', local);
     headerResults.setAttribute('aria-live', 'polite');
     const headerBtn = action(local, 'فحص ترويسات الخادم الآن', async () => {

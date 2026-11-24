@@ -28,6 +28,7 @@ jobs:
           sh scripts/build-pages.sh
           test -f dist/_headers && test -f dist/captcha.js
           node --test tests/security.test.cjs
+          node -e "JSON.parse(require('fs').readFileSync('vercel.json'))"
           python3 - <<'PY'
           from pathlib import Path
           import re

@@ -61,3 +61,22 @@ test('live header assessment does not treat missing headers as enabled', () => {
   assert.equal(check(response).filter(x => x[1]).length, 6);
   assert.equal(check(new Headers({'Strict-Transport-Security':'max-age=0'}))[2][1], false);
 });
+
+test('Arabic search normalizes common orthography and diacritics', () => {
+  const src = js.slice(js.indexOf('function normalizeSearch('), js.indexOf('function attachSearch('));
+  const normalize = vm.runInNewContext('(' + src.trim() + ')');
+  assert.equal(normalize(' أَحْمَد '), 'احمد');
+  assert.equal(normalize('مُصطفى'), 'مصطفي');
+  assert.equal(normalize(null), '');
+});
+test('Vercel security headers and hCaptcha opt-in configuration', () => {
+  const config = JSON.parse(fs.readFileSync('vercel.json','utf8'));
+  const headers = Object.fromEntries(config.headers[0].headers.map(x=>[x.key,x.value]));
+  assert.equal(headers['X-Frame-Options'],'DENY');
+  assert.match(headers['Content-Security-Policy'], /frame-ancestors 'none'/);
+  assert.match(headers['Content-Security-Policy'], /https:\/\/\*\.hcaptcha\.com/);
+  const env = {window:{}};
+  vm.runInNewContext(fs.readFileSync('security-config.js','utf8'), env);
+  vm.runInNewContext(fs.readFileSync('captcha.js','utf8'), env);
+  assert.equal(env.window.familyCaptcha.enabled, false);
+});
