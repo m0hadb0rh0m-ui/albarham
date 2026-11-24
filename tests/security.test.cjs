@@ -8,7 +8,9 @@ const js = fs.readFileSync('portal.js', 'utf8');
 test('HTML policy excludes unsafe script execution and mixed content', () => {
   const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/i)[1];
   const scripts = csp.split(';').find(x => x.trim().startsWith('script-src '));
-  assert.ok(!/unsafe-inline|unsafe-eval|\*/.test(scripts));
+  assert.ok(!/unsafe-inline|unsafe-eval/.test(scripts));
+  const wildcards = scripts.trim().split(/\s+/).filter(x => x.includes('*'));
+  assert.deepEqual(wildcards, ['https://*.hcaptcha.com']);
   for (const rule of ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "upgrade-insecure-requests"]) assert.ok(csp.includes(rule));
   assert.match(html, /name="referrer" content="no-referrer"/);
   assert.doesNotMatch(html, /\s(onclick|onload|onerror|onsubmit)\s*=/i);
