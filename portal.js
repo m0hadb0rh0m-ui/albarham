@@ -479,6 +479,8 @@
     if (!qrLoad) qrLoad = new Promise(resolve => {
       var script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+      script.integrity = 'sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU';
+      script.crossOrigin = 'anonymous';
       script.onload = () => resolve(!!window.QRCode);
       script.onerror = () => {
         script.remove();

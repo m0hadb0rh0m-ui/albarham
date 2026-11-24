@@ -81,20 +81,21 @@ jobs:
           work=$(mktemp -d)
           cd "$work"
           npm init -y >/dev/null
-          npm install --package-lock-only --ignore-scripts --no-audit --save-exact @supabase/supabase-js@2.49.4
+          npm install --package-lock-only --ignore-scripts --no-audit --save-exact @supabase/supabase-js@2.119.2
           npm audit --audit-level=high
-      - name: Check candidate SDK browser bundle and report public integrity digests
+      - name: Verify pinned browser dependencies against SRI and npm distribution
         if: always()
         run: |
           set -eu
           work=$(mktemp -d)
           curl --fail --silent --show-error --location --max-time 45 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js' -o "$work/supabase.js"
-          node --check "$work/supabase.js"
-          printf 'SDK candidate sha384-'
-          openssl dgst -sha384 -binary "$work/supabase.js" | openssl base64 -A
-          printf '\n'
           curl --fail --silent --show-error --location --max-time 45 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js' -o "$work/qrcode.js"
+          test "$(openssl dgst -sha384 -binary "$work/supabase.js" | openssl base64 -A)" = 'A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ'
+          test "$(openssl dgst -sha384 -binary "$work/qrcode.js" | openssl base64 -A)" = '3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU'
+          node --check "$work/supabase.js"
           node --check "$work/qrcode.js"
-          printf 'QRCode sha384-'
-          openssl dgst -sha384 -binary "$work/qrcode.js" | openssl base64 -A
-          printf '\n'
+          cd "$work"
+          package=$(npm pack --ignore-scripts --silent @supabase/supabase-js@2.119.2)
+          tar -xOf "$package" package/dist/umd/supabase.js > registry-sdk.js
+          cmp supabase.js registry-sdk.js
+          node -e "const sdk=require('./supabase.js');const c=sdk.createClient('https://example.supabase.co','sb_publishable_test',{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});for(const k of ['getUser','getSession','signUp','signInWithPassword','resetPasswordForEmail','updateUser','signOut'])if(typeof c.auth[k]!=='function')throw Error(k);if(typeof c.auth.mfa.getAuthenticatorAssuranceLevel!=='function'||typeof c.from!=='function'||typeof c.rpc!=='function'||typeof c.storage.from!=='function')throw Error('API mismatch');"

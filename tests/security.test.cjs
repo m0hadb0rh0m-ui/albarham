@@ -82,3 +82,9 @@ test('Vercel security headers and hCaptcha opt-in configuration', () => {
   vm.runInNewContext(fs.readFileSync('captcha.js','utf8'), env);
   assert.equal(env.window.familyCaptcha.enabled, false);
 });
+
+test('pinned external libraries carry SRI and anonymous CORS', () => {
+  assert.match(html, /supabase-js@2\.119\.2\/dist\/umd\/supabase\.js" integrity="sha384-[A-Za-z0-9+/]{64}" crossorigin="anonymous"/);
+  assert.match(js, /script\.integrity = 'sha384-[A-Za-z0-9+/]{64}'/);
+  assert.match(js, /script\.crossOrigin = 'anonymous'/);
+});
