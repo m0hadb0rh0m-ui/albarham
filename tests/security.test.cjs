@@ -50,7 +50,7 @@ test('service worker uses no-store, ignores out-of-scope and non-navigation requ
 });
 
 test('live header assessment does not treat missing headers as enabled', () => {
-  const source = js.slice(js.indexOf('function assessSecurityHeaders('), js.indexOf('function mountInfrastructureStatus('));
+  const source = js.slice(js.indexOf('function assessSecurityHeaders('), js.indexOf('function verifiedCheckState('));
   const check = vm.runInNewContext('(' + source.trim() + ')');
   assert.equal(check(new Headers()).filter(x => x[1]).length, 0);
   const response = new Headers({
@@ -87,4 +87,30 @@ test('pinned external libraries carry SRI and anonymous CORS', () => {
   assert.match(html, /supabase-js@2\.119\.2\/dist\/umd\/supabase\.js" integrity="sha384-[A-Za-z0-9+/]{64}" crossorigin="anonymous"/);
   assert.match(js, /script\.integrity = 'sha384-[A-Za-z0-9+/]{64}'/);
   assert.match(js, /script\.crossOrigin = 'anonymous'/);
+});
+
+test('security center distinguishes verified, failed and missing checks', () => {
+  const src = js.slice(js.indexOf('function verifiedCheckState('), js.indexOf('function mountInfrastructureStatus('));
+  const check = vm.runInNewContext('(' + src.trim() + ')');
+  assert.equal(check({checks:[{id:'a',state:'pass'}]},['a']), 'pass');
+  assert.equal(check({checks:[{id:'a',state:'pass'}]},['a','b']), 'warn');
+  assert.equal(check({checks:[{id:'a',state:'fail'}]},['a','b']), 'fail');
+  assert.equal(check(null,['a']), 'warn');
+});
+
+test('password exposure screen sends only the padded hash prefix and rejects known leaks', async () => {
+  const src = js.slice(js.indexOf('async function passwordLeakState('), js.indexOf('async function requirePasswordScreen('));
+  const check = vm.runInNewContext('(' + src.trim() + ')', {AbortController,TextEncoder,Uint8Array,setTimeout,clearTimeout});
+  const cryptoApi = require('node:crypto').webcrypto;
+  const hash = require('node:crypto').createHash('sha1').update('test-password').digest('hex').toUpperCase();
+  const mock = async (url,opts) => {
+    assert.equal(url,'https://api.pwnedpasswords.com/range/'+hash.slice(0,5));
+    assert.equal(opts.headers['Add-Padding'],'true');
+    assert.equal(opts.credentials,'omit');
+    return {ok:true,text:async()=>hash.slice(5)+':7'};
+  };
+  assert.equal(await check('test-password',mock,cryptoApi),'leaked');
+  assert.equal(await check('test-password',async()=>({ok:true,text:async()=>hash.slice(5)+':0'}),cryptoApi),'not-found');
+  assert.equal(await check('test-password',async()=>{throw Error('offline')},cryptoApi),'unavailable');
+  assert.equal(await check('test-password',async()=>({ok:true,text:async()=>'<html>'}),cryptoApi),'unavailable');
 });

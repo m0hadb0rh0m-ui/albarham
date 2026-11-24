@@ -120,6 +120,7 @@
     return authClient || (authClient = window.supabase.createClient('https://vfxxghfmkmgdqrczeowx.supabase.co',
       'sb_publishable_-LW-iVjvk4hmvdzcR9jgYw_my4buOkw', {
         auth: {
+          experimental: {passkey: window.FAMILY_SECURITY_CONFIG?.passkeysEnabled === true},
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true
@@ -211,6 +212,35 @@
     return length >= 15 && length <= 128;
   }
 
+  // Only the first five SHA-1 hex characters leave this browser, and only on submission.
+  async function passwordLeakState(password, fetcher = fetch, cryptoApi = crypto) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const digest = await cryptoApi.subtle.digest('SHA-1', new TextEncoder().encode(password));
+      const hash = Array.from(new Uint8Array(digest), x => x.toString(16).padStart(2,'0')).join('').toUpperCase();
+      const response = await fetcher('https://api.pwnedpasswords.com/range/' + hash.slice(0,5), {
+        headers: {'Add-Padding':'true'}, credentials:'omit', cache:'no-store', referrerPolicy:'no-referrer', signal:controller.signal
+      });
+      if (!response.ok) return 'unavailable';
+      const lines = (await response.text()).trim().split(/\r?\n/);
+      if (!lines.length || !lines.every(x => /^[A-F0-9]{35}:\d+$/i.test(x))) return 'unavailable';
+      return lines.some(x => x.slice(0,35).toUpperCase() === hash.slice(5) && Number(x.slice(36)) > 0) ? 'leaked' : 'not-found';
+    } catch (_) { return 'unavailable'; }
+    finally { clearTimeout(timer); }
+  }
+
+  async function requirePasswordScreen(password) {
+    const result = await passwordLeakState(password);
+    if (result === 'leaked') return 'كلمة المرور ظهرت في تسريبات سابقة. اختر كلمة مرور مختلفة.';
+    if (result === 'unavailable') return 'تعذر فحص كلمة المرور المسربة. تحقق من الاتصال ثم أعد المحاولة.';
+    return '';
+  }
+
+  for (const form of [$('#regForm')]) {
+    make('p', form, 'تُفحص كلمة المرور الجديدة عند الإرسال عبر HIBP باستخدام خمسة محارف من بصمتها فقط؛ لا تُرسل كلمة المرور أو بصمتها الكاملة للخدمة.');
+  }
+
   function authError(err) {
     var code = err.code || err.error_code || '';
     var messages = {
@@ -246,6 +276,8 @@
     b.disabled = true;
     show('#r-msg', 'جارٍ الاتصال بخدمة التسجيل...', 0);
     try {
+      const leakMessage = await requirePasswordScreen(pw);
+      if (leakMessage) return show('#r-msg', leakMessage, 1);
       if (window.familyCaptcha.enabled) {
         const captchaToken = await window.familyCaptcha.token(this);
         const signup = await client().auth.signUp({email, password: pw, options: {emailRedirectTo: location.origin + location.pathname, data: {full_name: name, phone: p, whatsapp: w}, captchaToken}});
@@ -609,8 +641,11 @@
     }
     b.disabled = true;
     try {
+      const password = p.value;
+      const leakMessage = await requirePasswordScreen(password);
+      if (leakMessage) { msg.textContent = leakMessage; return; }
       var z = await client().auth.updateUser({
-        password: p.value
+        password: password
       });
       msg.textContent = z.error ? 'تعذر تغيير كلمة المرور؛ قد يلزم تسجيل الدخول مجددًا.' :
       'تم تغيير كلمة المرور.';
@@ -621,6 +656,33 @@
       b.disabled = false;
     }
   };
+
+  if (window.FAMILY_SECURITY_CONFIG?.passkeysEnabled === true && window.PublicKeyCredential && window.isSecureContext) {
+    const loginPasskey = action($('#logForm'), 'دخول بمفتاح المرور', async () => {
+      if (loginPasskey.disabled) return;
+      loginPasskey.disabled = true;
+      try {
+        const z = await client().auth.signInWithPasskey();
+        if (z.error) throw z.error;
+        location.hash = 'account';
+      } catch (_) { show('#l-msg', 'تعذر الدخول بمفتاح المرور. يمكنك الدخول بالطريقة المعتادة.', 1); }
+      finally { loginPasskey.disabled = false; }
+    });
+    loginPasskey.type = 'button';
+    const registerPasskey = action(pwBox, 'إضافة مفتاح مرور', async () => {
+      if (registerPasskey.disabled) return;
+      registerPasskey.disabled = true;
+      try {
+        const level = ok(await client().auth.mfa.getAuthenticatorAssuranceLevel());
+        if (level.nextLevel === 'aal2' && level.currentLevel !== 'aal2') { location.hash = 'mfa'; return; }
+        const z = await client().auth.registerPasskey();
+        if (z.error) throw z.error;
+        alert('تم تسجيل مفتاح المرور. احتفظ بطريقة استعادة الحساب.');
+      } catch (_) { alert('تعذر تسجيل مفتاح المرور. تحقق من إعدادات المصادقة والجهاز.'); }
+      finally { registerPasskey.disabled = false; }
+    });
+    registerPasskey.type = 'button';
+  }
 
   var hub = newView('member-hub', 'مجلس العضو الرقمي'),
     hubBody = make('div', hub),
@@ -1772,8 +1834,11 @@
   changeForm.hidden = true;
   formAction(changeForm, 'حفظ كلمة المرور الجديدة', async () => {
     if (!validNewPassword(newPass.value)) throw Error('كلمة المرور غير صالحة');
+    const password = newPass.value;
+    const leakMessage = await requirePasswordScreen(password);
+    if (leakMessage) { alert(leakMessage); throw Error('Password screening failed'); }
     var z = await client().auth.updateUser({
-      password: newPass.value
+      password: password
     });
     if (z.error) throw z.error;
     changeForm.reset();
@@ -2074,26 +2139,42 @@
     ];
   }
 
+  function verifiedCheckState(report, required) {
+    const checks = Array.isArray(report?.checks) ? report.checks : [];
+    const matching = required.map(id => checks.find(x => x.id === id));
+    if (matching.some(x => x?.state === 'fail')) return 'fail';
+    if (matching.every(x => x?.state === 'pass')) return 'pass';
+    return 'warn';
+  }
+
   function mountInfrastructureStatus(parent) {
     const panel = section(parent, 'طبقات الحماية — ما يعمل وما ينقص');
     make('p', panel, 'حالة الخدمات الخارجية لا تُعدّ مفعّلة لمجرد وجود ملف إعداد. افحصها بعد الربط والنشر.');
     const items = [
-      ['MFA / Zero Trust', 'تفرض قاعدة البيانات AAL2 على الإدارة؛ راجع نتيجة فحص قاعدة البيانات.', 'pass'],
-      ['RLS / RBAC / تخزين خاص', 'يمكن التحقق منها في الفحص المباشر.', 'warn'],
-      ['DevSecOps / CodeQL', 'راجع نتيجة فحص الفرع المنشور أدناه.', 'warn'],
-      ['WAF / WAAP / DDoS / Bot Management', 'ربط مزود حماية وتطبيق قواعده مطلوب.', 'warn'],
-      ['CAPTCHA (hCaptcha / Turnstile)', window.familyCaptcha.enabled ? 'مفتاح عام موجود؛ تحقق من فرض CAPTCHA في Auth.' : 'التكامل جاهز؛ يلزم مفتاح موقع وإعداد Auth.', 'warn'],
-      ['Passkeys / FIDO2', 'يلزم ترقية SDK وإعداد المصادقة واختبارها.', 'warn'],
-      ['PQC / RASP', 'يلزم دعم مزود TLS أو بيئة تشغيل خلفية مناسبة.', 'warn'],
-      ['SIEM / XDR', 'سجل تدقيق داخلي موجود؛ يلزم تصدير آمن لمنصة مراقبة وتنبيه.', 'warn'],
-      ['Immutable Backups', 'يلزم نسخ مستقلة محمية واختبار استعادة للبيانات والملفات.', 'warn'],
-      ['كلمات المرور المسربة', 'تحقق من تفعيل الفحص في إعدادات Supabase Auth.', 'warn']
+      ['mfa','MFA / Zero Trust','تفرض قاعدة البيانات AAL2 على الإدارة. يلزم الفحص للتحقق من الجلسة الحالية.','warn','بانتظار الفحص'],
+      ['data','RLS / RBAC / تخزين خاص','فحص مباشر للجداول والسجلات الخاصة ودوال الإدارة ومخازن الملفات.','warn','بانتظار الفحص'],
+      ['ci','DevSecOps / CodeQL / SRI','يُقرأ آخر تشغيل للفرع الرئيسي من GitHub.','warn','بانتظار النتيجة'],
+      ['edge','WAF / WAAP / DDoS / Bot Management','تحتاج حماية خارجية على مزود الاستضافة، وحماية API بصورة مستقلة.','warn','غير مؤكد'],
+      ['captcha','CAPTCHA (hCaptcha / Turnstile)',window.familyCaptcha.enabled ? 'مفتاح عام موجود؛ يلزم إثبات فرض CAPTCHA في Auth.' : 'التكامل جاهز برمجيًا؛ لا يوجد مفتاح موقع مفعّل.','warn',window.familyCaptcha.enabled ? 'بانتظار التحقق' : 'غير مفعّل'],
+      ['passkeys','Passkeys / FIDO2','تم تجهيز تسجيل مفتاح المرور والدخول به؛ يلزم تفعيل Supabase وتحديد نطاق WebAuthn واختبار الاستعادة.','warn','غير مفعّل'],
+      ['pqc','PQC / RASP','يلزم دعم مزود TLS أو بيئة تشغيل خلفية مناسبة.','warn','غير مؤكد'],
+      ['siem','SIEM / XDR','سجل التدقيق الداخلي ليس SIEM؛ يلزم مزود تنبيهات ومراقبة مستقل.','warn','غير متكامل'],
+      ['backup','Immutable Backups','يلزم وجهة مستقلة ذات قفل احتفاظ واختبار استعادة البيانات والملفات.','warn','غير مؤكد'],
+      ['password','كلمات المرور المسربة','فحص HIBP في واجهة إنشاء وتغيير كلمة المرور؛ فرضه على خادم Supabase يتطلب خطة Pro وتفعيل الإعداد.','warn','فحص الواجهة فقط']
     ];
-    for (const [name, detail, status] of items) {
+    const marks = new Map();
+    for (const [id,name,detail,status,statusLabel] of items) {
       const row = make('div', panel); row.className = 'scan-result';
       const label = make('div', row); make('strong', label, name); make('small', label, detail);
-      const mark = make('span', row, status === 'pass' ? 'مفعّل' : 'تحقق / إعداد'); mark.className = 'scan-state ' + status;
+      const mark = make('span', row, statusLabel); mark.className = 'scan-state ' + status;
+      marks.set(id,mark);
     }
+    const update = (id,state,label) => {
+      const mark = marks.get(id);
+      if (!mark) return;
+      mark.className = 'scan-state ' + state;
+      mark.textContent = label;
+    };
     const links = section(parent, 'استكمال إعدادات الحماية');
     for (const [name, url] of [
       ['Vercel — إعداد الحماية والاستضافة', 'https://vercel.com/dashboard'],
@@ -2104,6 +2185,7 @@
     ]) {
       const a = make('a', links, name); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'btn btn-ghost';
     }
+    return update;
   }
 
   async function mountSecurityScanner(parent) {
@@ -2119,9 +2201,15 @@
       try {
         var result = ok(await client().rpc('family_run_security_scan'));
         renderScan(results, result);
+        for (const [id, required] of [['mfa',['mfa','session']],['data',['rls','private_tables','admin_rpc','storage','upload_limits']]]) {
+          const state = verifiedCheckState(result, required);
+          updateInfrastructure(id,state,state === 'pass' ? 'اجتاز الفحص' : state === 'fail' ? 'خلل مكتشف' : 'يحتاج مراجعة');
+        }
         msg.textContent = 'اكتمل فحص قاعدة البيانات.';
         await refreshHistory();
       } catch (e) {
+        updateInfrastructure('mfa','warn','تعذر التحقق');
+        updateInfrastructure('data','warn','تعذر التحقق');
         msg.textContent = 'تعذر إجراء الفحص. تحقق من الاتصال وصلاحية الإدارة.';
       } finally {
         run.disabled = false;
@@ -2163,7 +2251,7 @@
       } finally { headerBtn.disabled = false; }
     });
     headerBtn.className = 'btn btn-dark';
-    mountInfrastructureStatus(parent);
+    const updateInfrastructure = mountInfrastructureStatus(parent);
     var gh = section(parent, 'نتائج فحص الكود في GitHub');
     var ghMsg = make('p', gh, 'يمكنك قراءة آخر نتيجة متاحة للفرع الرئيسي من سجل GitHub Actions.');
     ghMsg.setAttribute('role', 'status');
@@ -2186,6 +2274,8 @@
           ghMsg.textContent = 'لا يوجد تشغيل ظاهر للفحص حتى الآن.';
           return;
         }
+        const ciState = item.status === 'completed' ? (item.conclusion === 'success' ? 'pass' : item.conclusion === 'failure' ? 'fail' : 'warn') : 'warn';
+        updateInfrastructure('ci',ciState,ciState === 'pass' ? 'نجح آخر تشغيل' : ciState === 'fail' ? 'فشل آخر تشغيل' : 'غير مكتمل');
         var labels = {
           success: 'نجح',
           failure: 'فشل',
@@ -2225,6 +2315,7 @@
         link.rel = 'noopener noreferrer';
         link.className = 'more';
       } catch (e) {
+        updateInfrastructure('ci','warn','تعذر التحقق');
         ghMsg.textContent = 'تعذر إكمال قراءة تفاصيل GitHub من المتصفح. لا يمكن تأكيد نجاح الفحص.';
       } finally {
         ghBtn.disabled = false;
