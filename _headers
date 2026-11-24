@@ -1,0 +1,16 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://vfxxghfmkmgdqrczeowx.supabase.co; connect-src 'self' https://api.github.com https://vfxxghfmkmgdqrczeowx.supabase.co wss://vfxxghfmkmgdqrczeowx.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self'; frame-src https://challenges.cloudflare.com; manifest-src 'self'; upgrade-insecure-requests; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000
+  Cross-Origin-Opener-Policy: same-origin
+/index.html
+  Cache-Control: no-store
+/
+  Cache-Control: no-store
+/security-config.js
+  Cache-Control: no-store
+/sw.js
+  Cache-Control: no-cache
