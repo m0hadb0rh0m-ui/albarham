@@ -120,6 +120,7 @@
     return authClient || (authClient = window.supabase.createClient('https://vfxxghfmkmgdqrczeowx.supabase.co',
       'sb_publishable_-LW-iVjvk4hmvdzcR9jgYw_my4buOkw', {
         auth: {
+          experimental: {passkey: window.FAMILY_SECURITY_CONFIG?.passkeysEnabled === true},
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true
@@ -211,6 +212,31 @@
     return length >= 15 && length <= 128;
   }
 
+  // Only the first five SHA-1 hex characters leave this browser, and only on submission.
+  async function passwordLeakState(password, fetcher = fetch, cryptoApi = crypto) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const digest = await cryptoApi.subtle.digest('SHA-1', new TextEncoder().encode(password));
+      const hash = Array.from(new Uint8Array(digest), x => x.toString(16).padStart(2,'0')).join('').toUpperCase();
+      const response = await fetcher('https://api.pwnedpasswords.com/range/' + hash.slice(0,5), {
+        headers: {'Add-Padding':'true'}, credentials:'omit', cache:'no-store', referrerPolicy:'no-referrer', signal:controller.signal
+      });
+      if (!response.ok) return 'unavailable';
+      const lines = (await response.text()).trim().split(/\r?\n/);
+      if (!lines.length || !lines.every(x => /^[A-F0-9]{35}:\d+$/i.test(x))) return 'unavailable';
+      return lines.some(x => x.slice(0,35).toUpperCase() === hash.slice(5) && Number(x.slice(36)) > 0) ? 'leaked' : 'not-found';
+    } catch (_) { return 'unavailable'; }
+    finally { clearTimeout(timer); }
+  }
+
+  async function requirePasswordScreen(password) {
+    const result = await passwordLeakState(password);
+    if (result === 'leaked') return 'كلمة المرور ظهرت في تسريبات سابقة. اختر كلمة مرور مختلفة.';
+    if (result === 'unavailable') return 'تعذر فحص كلمة المرور المسربة. تحقق من الاتصال ثم أعد المحاولة.';
+    return '';
+  }
+
   function authError(err) {
     var code = err.code || err.error_code || '';
     var messages = {
@@ -246,6 +272,8 @@
     b.disabled = true;
     show('#r-msg', 'جارٍ الاتصال بخدمة التسجيل...', 0);
     try {
+      const leakMessage = await requirePasswordScreen(pw);
+      if (leakMessage) return show('#r-msg', leakMessage, 1);
       if (window.familyCaptcha.enabled) {
         const captchaToken = await window.familyCaptcha.token(this);
         const signup = await client().auth.signUp({email, password: pw, options: {emailRedirectTo: location.origin + location.pathname, data: {full_name: name, phone: p, whatsapp: w}, captchaToken}});
@@ -609,8 +637,11 @@
     }
     b.disabled = true;
     try {
+      const password = p.value;
+      const leakMessage = await requirePasswordScreen(password);
+      if (leakMessage) { msg.textContent = leakMessage; return; }
       var z = await client().auth.updateUser({
-        password: p.value
+        password: password
       });
       msg.textContent = z.error ? 'تعذر تغيير كلمة المرور؛ قد يلزم تسجيل الدخول مجددًا.' :
       'تم تغيير كلمة المرور.';
@@ -621,6 +652,33 @@
       b.disabled = false;
     }
   };
+
+  if (window.FAMILY_SECURITY_CONFIG?.passkeysEnabled === true && window.PublicKeyCredential && window.isSecureContext) {
+    const loginPasskey = action($('#logForm'), 'دخول بمفتاح المرور', async () => {
+      if (loginPasskey.disabled) return;
+      loginPasskey.disabled = true;
+      try {
+        const z = await client().auth.signInWithPasskey();
+        if (z.error) throw z.error;
+        location.hash = 'account';
+      } catch (_) { show('#l-msg', 'تعذر الدخول بمفتاح المرور. يمكنك الدخول بالطريقة المعتادة.', 1); }
+      finally { loginPasskey.disabled = false; }
+    });
+    loginPasskey.type = 'button';
+    const registerPasskey = action(pwBox, 'إضافة مفتاح مرور', async () => {
+      if (registerPasskey.disabled) return;
+      registerPasskey.disabled = true;
+      try {
+        const level = ok(await client().auth.mfa.getAuthenticatorAssuranceLevel());
+        if (level.nextLevel === 'aal2' && level.currentLevel !== 'aal2') { location.hash = 'mfa'; return; }
+        const z = await client().auth.registerPasskey();
+        if (z.error) throw z.error;
+        alert('تم تسجيل مفتاح المرور. احتفظ بطريقة استعادة الحساب.');
+      } catch (_) { alert('تعذر تسجيل مفتاح المرور. تحقق من إعدادات المصادقة والجهاز.'); }
+      finally { registerPasskey.disabled = false; }
+    });
+    registerPasskey.type = 'button';
+  }
 
   var hub = newView('member-hub', 'مجلس العضو الرقمي'),
     hubBody = make('div', hub),
@@ -1772,8 +1830,11 @@
   changeForm.hidden = true;
   formAction(changeForm, 'حفظ كلمة المرور الجديدة', async () => {
     if (!validNewPassword(newPass.value)) throw Error('كلمة المرور غير صالحة');
+    const password = newPass.value;
+    const leakMessage = await requirePasswordScreen(password);
+    if (leakMessage) { alert(leakMessage); return; }
     var z = await client().auth.updateUser({
-      password: newPass.value
+      password: password
     });
     if (z.error) throw z.error;
     changeForm.reset();
@@ -2091,11 +2152,11 @@
       ['ci','DevSecOps / CodeQL / SRI','يُقرأ آخر تشغيل للفرع الرئيسي من GitHub.','warn','بانتظار النتيجة'],
       ['edge','WAF / WAAP / DDoS / Bot Management','تحتاج حماية خارجية على مزود الاستضافة، وحماية API بصورة مستقلة.','warn','غير مؤكد'],
       ['captcha','CAPTCHA (hCaptcha / Turnstile)',window.familyCaptcha.enabled ? 'مفتاح عام موجود؛ يلزم إثبات فرض CAPTCHA في Auth.' : 'التكامل جاهز برمجيًا؛ لا يوجد مفتاح موقع مفعّل.','warn',window.familyCaptcha.enabled ? 'بانتظار التحقق' : 'غير مفعّل'],
-      ['passkeys','Passkeys / FIDO2','تمت ترقية SDK؛ يلزم إعداد Passkeys واختبار المصادقة والاستعادة.','warn','غير مفعّل'],
+      ['passkeys','Passkeys / FIDO2','تم تجهيز تسجيل مفتاح المرور والدخول به؛ يلزم تفعيل Supabase وتحديد نطاق WebAuthn واختبار الاستعادة.','warn','غير مفعّل'],
       ['pqc','PQC / RASP','يلزم دعم مزود TLS أو بيئة تشغيل خلفية مناسبة.','warn','غير مؤكد'],
       ['siem','SIEM / XDR','سجل التدقيق الداخلي ليس SIEM؛ يلزم مزود تنبيهات ومراقبة مستقل.','warn','غير متكامل'],
       ['backup','Immutable Backups','يلزم وجهة مستقلة ذات قفل احتفاظ واختبار استعادة البيانات والملفات.','warn','غير مؤكد'],
-      ['password','كلمات المرور المسربة','كان الفحص معطّلًا في آخر مراجعة لمستشار Supabase بتاريخ 2026-11-24؛ تحقّق من Auth.','warn','غير مفعّل عند المراجعة']
+      ['password','كلمات المرور المسربة','فحص HIBP في واجهة إنشاء وتغيير كلمة المرور؛ فرضه على خادم Supabase يتطلب خطة Pro وتفعيل الإعداد.','warn','فحص الواجهة فقط']
     ];
     const marks = new Map();
     for (const [id,name,detail,status,statusLabel] of items) {

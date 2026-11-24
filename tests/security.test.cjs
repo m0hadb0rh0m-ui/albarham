@@ -97,3 +97,20 @@ test('security center distinguishes verified, failed and missing checks', () => 
   assert.equal(check({checks:[{id:'a',state:'fail'}]},['a','b']), 'fail');
   assert.equal(check(null,['a']), 'warn');
 });
+
+test('password exposure screen sends only the padded hash prefix and rejects known leaks', async () => {
+  const src = js.slice(js.indexOf('async function passwordLeakState('), js.indexOf('async function requirePasswordScreen('));
+  const check = vm.runInNewContext('(' + src.trim() + ')', {AbortController,TextEncoder,Uint8Array,setTimeout,clearTimeout});
+  const cryptoApi = require('node:crypto').webcrypto;
+  const hash = require('node:crypto').createHash('sha1').update('test-password').digest('hex').toUpperCase();
+  const mock = async (url,opts) => {
+    assert.equal(url,'https://api.pwnedpasswords.com/range/'+hash.slice(0,5));
+    assert.equal(opts.headers['Add-Padding'],'true');
+    assert.equal(opts.credentials,'omit');
+    return {ok:true,text:async()=>hash.slice(5)+':7'};
+  };
+  assert.equal(await check('test-password',mock,cryptoApi),'leaked');
+  assert.equal(await check('test-password',async()=>({ok:true,text:async()=>hash.slice(5)+':0'}),cryptoApi),'not-found');
+  assert.equal(await check('test-password',async()=>{throw Error('offline')},cryptoApi),'unavailable');
+  assert.equal(await check('test-password',async()=>({ok:true,text:async()=>'<html>'}),cryptoApi),'unavailable');
+});
