@@ -140,5 +140,14 @@ test('featured announcement does not inherit the light glass card surface', () =
   assert.match(release,/\.home-news-card\{\s*background:#123b30/);
   assert.match(release,/\.home-news-card h3\{color:#fffaf0\}/);
   assert.match(release,/\.home-news-card p\{color:#f2f4ed\}/);
-  assert.match(html,/portal\.css\?v=38/);
+  assert.match(html,/portal\.css\?v=39/);
+});
+
+test('luminous glass preserves separate announcement contrast and print layout', () => {
+ const css=fs.readFileSync('portal.css','utf8').split('/* Release 39:')[1];
+ assert.match(css,/background-color:transparent;background-image:var\(--glass-surface\)/);
+ assert.match(css,/backdrop-filter:blur\(12px\)/);
+ assert.match(css,/\.home-news-card h3\{color:#fffaf0\}/);
+ assert.match(css,/prefers-reduced-transparency/);
+ assert.ok(!css.includes('.cert-prev'));
 });
