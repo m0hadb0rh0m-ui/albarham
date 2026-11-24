@@ -296,6 +296,7 @@ footer.site a:hover{color:#f0d5a0}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
 @media print{header.site,.topline,footer.site{display:none!important}.cert-prev{box-shadow:none!important;border-radius:0!important}}
 .hub-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:24px}.hub-tabs .btn{background:var(--surface);color:var(--fg);border:1px solid var(--line);box-shadow:none}.hub-tabs .btn[aria-pressed=true]{background:linear-gradient(135deg,#eed3a0,#c4a56a);color:#123b30;border-color:#b89a62}.card summary{cursor:pointer;font-weight:700;color:var(--gold-ink);padding:6px 0}.card[open] summary{margin-bottom:15px}.hub-tabs .btn{min-height:56px}@media(max-width:620px){.hub-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.hub-tabs .btn{padding:10px;font-size:14px}}
+.lux-news-card{max-width:900px;margin:26px auto;background:var(--surface);border:1px solid var(--gold);border-top:5px solid var(--gold);border-radius:24px;padding:clamp(20px,4vw,42px);box-shadow:var(--shadow-hover)}.lux-heading{display:flex;align-items:center;justify-content:center;gap:15px;color:var(--gold-ink)}.lux-badge{display:inline-block;background:linear-gradient(135deg,#f0d5a0,#c5a365);color:#123b30;border-radius:30px;padding:7px 20px;font-weight:700}.lux-ornament{font-size:23px}.lux-news-card .lux-title{text-align:center;font-size:clamp(29px,4vw,44px);line-height:1.55;margin:18px 0 26px;color:var(--fg)}.lux-verse-box{background:linear-gradient(135deg,#09251e,#205344);color:#fff;border:1px solid #c4a56a;border-radius:18px;padding:24px 16px;text-align:center;margin-bottom:24px}.lux-news-card .lux-bismillah{font:700 25px/1.8 var(--display);color:#e8d2a0;margin:0 0 10px}.lux-verse{font:700 clamp(23px,3vw,30px)/2 var(--display);margin:0;color:#fffaf0}.lux-verse small{color:#e8d2a0}.lux-news-card p{font-size:clamp(17px,2vw,20px);line-height:2}.lux-news-card .lux-section-title{font-size:28px;text-align:center;color:var(--gold-ink);margin:26px 0 18px;border-bottom:1px solid var(--gold);padding-bottom:12px}.lux-members{list-style:none;counter-reset:member;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0;margin:0 0 24px}.lux-members li{counter-increment:member;display:flex;align-items:center;gap:10px;background:var(--band);border:1px solid var(--line);border-radius:13px;padding:14px;font-weight:600;font-size:17px;overflow-wrap:anywhere}.lux-members li:before{content:counter(member);flex:none;background:#123b30;color:#e8d2a0;border:1px solid #c4a56a;border-radius:50%;width:32px;height:32px;display:grid;place-items:center}.lux-news-card .lux-prayer{border-block:1px solid var(--line);padding:18px 0;text-align:center;font-weight:600}.lux-news-card .lux-hashtag{color:var(--gold-ink);text-align:center;font-weight:700;margin:18px 0;overflow-wrap:anywhere}.lux-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:24px}.lux-actions .btn{margin:0}@media(max-width:600px){.lux-members{grid-template-columns:1fr}.lux-actions .btn{flex:1 1 100%}.lux-news-card{padding:20px 15px}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -506,14 +507,14 @@ footer.site a:hover{color:#f0d5a0}
       <div class="card"><h3>إنجازات أبناء العائلة</h3><p>مشاركة الإنجازات بموافقة أصحابها.</p></div>
       <div class="card"><h3>إعلانات الإدارة</h3><p>تنبيهات رسمية مرتبطة بخدمات المنصة.</p></div>
     </div>
-    <article class="card council-announcement" style="margin-top:24px;border-top:4px solid var(--gold);padding:clamp(22px,4vw,42px);">
-      <span class="chip c-ok">إعلان عائلي</span>
-      <h2 style="margin-top:16px">تشكيل المجلس الشبابي لعائلة برهم</h2>
-      <p style="text-align:center;font-family:var(--display);font-size:23px;margin:24px 0 8px">بسم الله الرحمن الرحيم</p>
-      <blockquote style="margin:0 0 24px;padding:18px;background:var(--band);border-inline-start:3px solid var(--gold);border-radius:10px;text-align:center;font-family:var(--display);font-size:23px;line-height:1.9">﴿وَقُلِ اعْمَلُوا فَسَيَرَى اللَّهُ عَمَلَكُمْ وَرَسُولُهُ وَالْمُؤْمِنُونَ﴾<br><small style="font-size:14px">[التوبة: ١٠٥]</small></blockquote>
+    <article class="card council-announcement lux-news-card" dir="rtl">
+      <div class="lux-heading"><span class="lux-ornament" aria-hidden="true">❖</span><span class="lux-badge">إعلان عائلي</span><span class="lux-ornament" aria-hidden="true">❖</span></div>
+      <h2 class="lux-title">تشكيل المجلس الشبابي لعائلة برهم</h2>
+      <div class="lux-verse-box"><p class="lux-bismillah">بسم الله الرحمن الرحيم</p>
+      <blockquote class="lux-verse">﴿وَقُلِ اعْمَلُوا فَسَيَرَى اللَّهُ عَمَلَكُمْ وَرَسُولُهُ وَالْمُؤْمِنُونَ﴾<br><small style="font-size:14px">[التوبة: ١٠٥]</small></blockquote></div>
       <p>بتوفيق من الله، وبروح المسؤولية والعمل المشترك، نعلن عن تشكيل المجلس الشبابي لعائلة برهم ليكون إطارًا يجمع طاقات الشباب، ويعزز روح المبادرة والتكافل وخدمة أبناء العائلة، ويحافظ على إرثها ويخدم مستقبل أبنائها.</p>
-      <h3 style="margin-top:24px">أعضاء المجلس</h3>
-      <ol style="padding-inline-start:24px;line-height:2.2;margin:12px 0 24px">
+      <h3 class="lux-section-title">أعضاء المجلس</h3>
+      <ol class="lux-members">
         <li>سامح ابراهيم احمد ابو برهم</li>
         <li>حازم محفوظ سليم برهم</li>
         <li>حسني احمد محمود قاسم</li>
@@ -521,9 +522,9 @@ footer.site a:hover{color:#f0d5a0}
         <li>هشام يوسف محمود قاسم</li>
         <li>اسماعيل فتحي محمد ابو برهم</li>
       </ol>
-      <p>نسأل الله لهم التوفيق والسداد، وأن يبارك جهودهم لما فيه خير العائلة وأبنائها.</p>
-      <p style="margin-top:20px;color:var(--gold-ink);font-weight:700">#عائلة_برهم_في_الداخل_والخارج</p>
-    </article>
+      <p class="lux-prayer">نسأل الله لهم التوفيق والسداد، وأن يبارك جهودهم لما فيه خير العائلة وأبنائها.</p>
+      <p class="lux-hashtag">#عائلة_برهم_في_الداخل_والخارج</p>
+    <div class="lux-actions"><a class="btn btn-gold" href="https://wa.me/?text=%D8%AA%D8%B4%D9%83%D9%8A%D9%84%20%D8%A7%D9%84%D9%85%D8%AC%D9%84%D8%B3%20%D8%A7%D9%84%D8%B4%D8%A8%D8%A7%D8%A8%D9%8A%20%D9%84%D8%B9%D8%A7%D8%A6%D9%84%D8%A9%20%D8%A8%D8%B1%D9%87%D9%85%0Ahttps%3A%2F%2Fm0hadb0rh0m-ui.github.io%2Falbarham%2F%23news" target="_blank" rel="noopener noreferrer">مشاركة عبر واتساب</a><a class="btn btn-dark" href="#community">العودة إلى المجتمع</a><a class="btn btn-ghost" href="#contact">التواصل مع الإدارة</a></div></article>
   </div></div>
 </section>
 
