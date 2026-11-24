@@ -1874,6 +1874,7 @@
       secBody.replaceChildren();
       var overview = section(secBody, 'حالة الحماية');
       make('p', overview, 'التحقق الثنائي: ' + (d.mfa_enabled ? 'مفعّل' : 'يحتاج إلى تفعيل'));
+      make('p', overview, 'مستوى التحقق الحالي: ' + (d.current_aal === 'aal2' ? 'AAL2 — تحقق ثنائي مؤكد' : 'غير مؤكد'));
       make('p', overview, 'الجلسات المسجلة: ' + d.sessions);
       make('p', overview, 'مخازن الملفات الخاصة: ' + d.private_buckets);
       make('p', overview, 'عمليات آخر سبعة أيام: ' + d.events_7d);
@@ -1986,6 +1987,54 @@
       }
     }
   }
+  function assessSecurityHeaders(headers) {
+    const csp = headers.get('content-security-policy') || '';
+    const xfo = (headers.get('x-frame-options') || '').trim().toUpperCase();
+    const hsts = headers.get('strict-transport-security') || '';
+    const maxAge = hsts.match(/(?:^|;)\s*max-age\s*=\s*(\d+)/i);
+    const pp = headers.get('permissions-policy') || '';
+    const ref = (headers.get('referrer-policy') || '').trim().toLowerCase();
+    return [
+      ['CSP عبر ترويسة HTTP', Boolean(csp.trim())],
+      ['منع التأطير Clickjacking', /(?:^|;)\s*frame-ancestors\s+'none'\s*(?:;|$)/i.test(csp) || xfo === 'DENY'],
+      ['HSTS لمدة سنة على الأقل', Boolean(maxAge && Number(maxAge[1]) >= 31536000)],
+      ['منع تخمين MIME', (headers.get('x-content-type-options') || '').trim().toLowerCase() === 'nosniff'],
+      ['سياسة عدم إرسال المرجع', ref === 'no-referrer'],
+      ['تقييد الكاميرا والميكروفون والموقع', ['camera','microphone','geolocation'].every(k => new RegExp('(?:^|,)\\s*' + k + '\\s*=\\s*\\(\\s*\\)').test(pp))]
+    ];
+  }
+
+  function mountInfrastructureStatus(parent) {
+    const panel = section(parent, 'طبقات الحماية — ما يعمل وما ينقص');
+    make('p', panel, 'حالة الخدمات الخارجية لا تُعدّ مفعّلة لمجرد وجود ملف إعداد. افحصها بعد الربط والنشر.');
+    const items = [
+      ['MFA / Zero Trust', 'تفرض قاعدة البيانات AAL2 على الإدارة؛ راجع نتيجة فحص قاعدة البيانات.', 'pass'],
+      ['RLS / RBAC / تخزين خاص', 'يمكن التحقق منها في الفحص المباشر.', 'warn'],
+      ['DevSecOps / CodeQL', 'راجع نتيجة فحص الفرع المنشور أدناه.', 'warn'],
+      ['WAF / WAAP / DDoS / Bot Management', 'ربط مزود حماية وتطبيق قواعده مطلوب.', 'warn'],
+      ['Turnstile', window.familyCaptcha.enabled ? 'مفتاح عام موجود؛ تحقق من فرض CAPTCHA في Auth.' : 'التكامل جاهز؛ يلزم مفتاح موقع وإعداد Auth.', 'warn'],
+      ['Passkeys / FIDO2', 'يلزم ترقية SDK وإعداد المصادقة واختبارها.', 'warn'],
+      ['PQC / RASP', 'يلزم دعم مزود TLS أو بيئة تشغيل خلفية مناسبة.', 'warn'],
+      ['SIEM / XDR', 'سجل تدقيق داخلي موجود؛ يلزم تصدير آمن لمنصة مراقبة وتنبيه.', 'warn'],
+      ['Immutable Backups', 'يلزم نسخ مستقلة محمية واختبار استعادة للبيانات والملفات.', 'warn'],
+      ['كلمات المرور المسربة', 'تحقق من تفعيل الفحص في إعدادات Supabase Auth.', 'warn']
+    ];
+    for (const [name, detail, status] of items) {
+      const row = make('div', panel); row.className = 'scan-result';
+      const label = make('div', row); make('strong', label, name); make('small', label, detail);
+      const mark = make('span', row, status === 'pass' ? 'مفعّل' : 'تحقق / إعداد'); mark.className = 'scan-state ' + status;
+    }
+    const links = section(parent, 'استكمال إعدادات الحماية');
+    for (const [name, url] of [
+      ['Cloudflare — إعداد الحماية الطرفية', 'https://dash.cloudflare.com/'],
+      ['Supabase — إعداد المصادقة', 'https://supabase.com/dashboard/project/vfxxghfmkmgdqrczeowx/auth/providers'],
+      ['Supabase — مستشار الأمان', 'https://supabase.com/dashboard/project/vfxxghfmkmgdqrczeowx/advisors/security'],
+      ['GitHub — إعدادات المستودع', 'https://github.com/m0hadb0rh0m-ui/albarham/settings']
+    ]) {
+      const a = make('a', links, name); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'btn btn-ghost';
+    }
+  }
+
   async function mountSecurityScanner(parent) {
     var scanner = section(parent, 'فحص الحماية المباشر');
     parent.prepend(scanner);
@@ -2020,15 +2069,39 @@
       'غير مكتشفة'));
     make('p', local, 'هذه مؤشرات للمتصفح، وليست اختبار اختراق.');
     make('p', local, 'Turnstile: ' + (window.familyCaptcha.enabled ? 'مهيأ في الواجهة؛ يلزم التحقق من فرضه في Supabase.' : 'بانتظار إعداد مفتاح الموقع في Cloudflare.'));
+    const headerResults = make('div', local);
+    headerResults.setAttribute('aria-live', 'polite');
+    const headerBtn = action(local, 'فحص ترويسات الخادم الآن', async () => {
+      if (headerBtn.disabled) return;
+      headerBtn.disabled = true;
+      headerResults.textContent = 'جارٍ التحقق من استجابة الخادم…';
+      try {
+        const url = new URL(location.pathname, location.origin);
+        const response = await fetch(url, {credentials: 'omit', cache: 'no-store', redirect: 'error'});
+        if (!response.ok) throw Error('Response unavailable');
+        headerResults.replaceChildren();
+        make('p', headerResults, 'نتيجة استجابة الموقع الحالية (ليست فحصًا لمزود WAF أو TLS).');
+        for (const [name, present] of assessSecurityHeaders(response.headers)) {
+          const row = make('div', headerResults); row.className = 'scan-result';
+          make('strong', row, name);
+          const mark = make('span', row, present ? 'مكتشف' : 'غير مكتشف');
+          mark.className = 'scan-state ' + (present ? 'pass' : 'warn');
+        }
+      } catch (e) {
+        headerResults.textContent = 'تعذر التحقق من الترويسات. لا يمكن تأكيد حالة الخادم.';
+      } finally { headerBtn.disabled = false; }
+    });
+    headerBtn.className = 'btn btn-dark';
+    mountInfrastructureStatus(parent);
     var gh = section(parent, 'نتائج فحص الكود في GitHub');
-    var ghMsg = make('p', gh, 'يمكنك قراءة آخر نتيجة متاحة علنًا من سجل GitHub Actions.');
+    var ghMsg = make('p', gh, 'يمكنك قراءة آخر نتيجة متاحة للفرع الرئيسي من سجل GitHub Actions.');
     ghMsg.setAttribute('role', 'status');
     var ghBtn = action(gh, 'قراءة نتيجة فحص الكود', async () => {
       ghBtn.disabled = true;
       ghMsg.textContent = 'جارٍ قراءة نتيجة الفحص…';
       try {
         var response = await fetch(
-          'https://api.github.com/repos/m0hadb0rh0m-ui/albarham/actions/workflows/security.yml/runs?per_page=1', {
+          'https://api.github.com/repos/m0hadb0rh0m-ui/albarham/actions/workflows/security.yml/runs?branch=main&event=push&per_page=1', {
             credentials: 'omit',
             cache: 'no-store',
             headers: {
