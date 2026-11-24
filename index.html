@@ -619,9 +619,10 @@ footer.site{background:var(--green-deep);color:var(--on-green2);padding-top:48px
     <div><h4>استكشف</h4><a href="#history">تاريخ العائلة</a><a href="#archive">الأرشيف</a><a href="#tree">شجرة العائلة</a><a href="#stories">حكايات البيت</a><a href="#events">المناسبات</a><a href="#roadmap">خارطة المنصة</a></div>
     <div><h4>المنصة</h4><a href="#membership">العضوية</a><a href="#initiatives">المبادرات</a><a href="#contact">التواصل</a><a href="#privacy">الخصوصية</a></div>
   </div>
-  <div class="wrap copy"><span>© آل برهم • جميع الحقوق محفوظة</span><span>نسخة تأسيسية: التسجيل والدخول غير مفعّلين بعد</span></div>
+  <div class="wrap copy"><span>© آل برهم • جميع الحقوق محفوظة</span><span>التسجيل الإلكتروني • العضوية بعد اعتماد الإدارة</span></div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
   document.documentElement.setAttribute('dir','rtl');document.documentElement.setAttribute('lang','ar');
@@ -663,30 +664,27 @@ footer.site{background:var(--green-deep);color:var(--on-green2);padding-top:48px
   window.addEventListener('hashchange',route);route();
   btn.addEventListener('click',function(){var o=hdr.classList.toggle('open');btn.setAttribute('aria-expanded',o)});
 
-  // register form: validates only; nothing is sent or stored
+
   var same=$('#r-same');
-  function syncWa(){var on=same.checked;$('#r-wa').disabled=on;$('#r-wcc').disabled=on}
+  function syncWa(){ $('#r-wa').disabled=same.checked; $('#r-wcc').disabled=same.checked; }
   same.addEventListener('change',syncWa);syncWa();
-  function show(id,text,err){var m=$(id);m.hidden=false;m.className='msg'+(err?' err':'');m.textContent=text}
-  $('#regForm').addEventListener('submit',function(e){
-    e.preventDefault();
-    if($('#r-name').value.trim().length<4)return show('#r-msg','اكتب الاسم الكامل (٤ أحرف على الأقل).',1);
-    if(!$('#r-phone').value.trim())return show('#r-msg','أدخل رقم الهاتف.',1);
-    if(!same.checked&&!$('#r-wa').value.trim())return show('#r-msg','أدخل رقم واتساب أو فعّل خيار «نفس رقم الهاتف».',1);
-    if(!/^\S+@\S+\.\S+$/.test($('#r-mail').value))return show('#r-msg','أدخل بريدًا إلكترونيًا صحيحًا.',1);
-    if($('#r-pw').value.length<10)return show('#r-msg','كلمة المرور ١٠ أحرف على الأقل.',1);
-    if($('#r-pw').value!==$('#r-pw2').value)return show('#r-msg','كلمتا المرور غير متطابقتين.',1);
-    if(!$('#r-ok').checked)return show('#r-msg','وافق على سياسة الخصوصية للمتابعة.',1);
-    $('#r-pw').value='';$('#r-pw2').value='';
-    show('#r-msg','بياناتك صحيحة، لكن التسجيل غير مفعّل بعد في هذه النسخة. لم يُرسل شيء ولم يُحفظ. سيُفتح الطلب بعد ربط قاعدة البيانات وخدمة البريد.',0);
-  });
-  $('#logForm').addEventListener('submit',function(e){
-    e.preventDefault();
-    if(!/^\S+@\S+\.\S+$/.test($('#l-mail').value))return show('#l-msg','أدخل بريدًا إلكترونيًا صحيحًا.',1);
-    if(!$('#l-pw').value)return show('#l-msg','أدخل كلمة المرور.',1);
-    $('#l-pw').value='';
-    show('#l-msg','تسجيل الدخول غير مفعّل بعد في هذه النسخة. سيعمل بعد ربط خدمة المصادقة.',0);
-  });
+  function show(id,t,err){var m=$(id);m.hidden=false;m.className='msg'+(err?' err':'');m.textContent=t;}
+  var authClient;
+  function client(){if(!window.supabase)throw Error('تعذر تحميل خدمة الاتصال');return authClient||(authClient=window.supabase.createClient('https://vfxxghfmkmgdqrczeowx.supabase.co','sb_publishable_-LW-iVjvk4hmvdzcR9jgYw_my4buOkw'));}
+  function phone(cc,v){return cc+v.replace(/[٠-٩]/g,x=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(x))).replace(/[\s()-]/g,'').replace(/^0+/,'');}
+  var statusLabels={pending_email:'بانتظار تأكيد البريد',under_review:'قيد المراجعة',more_info:'مطلوب استكمال معلومات',approved:'معتمدة',rejected:'مرفوضة',suspended:'موقوفة',revoked:'ملغاة'};
+  var panel=document.createElement('section');panel.className='view';panel.id='v-account';panel.hidden=true;panel.dataset.title='حسابي';
+  panel.innerHTML='<div class="wrap sec"><h1>حسابي</h1><p id="account-status" role="status"></p><form id="completeForm" hidden><h2>استكمال طلب العضوية</h2><label class="f">الاسم الكامل<input id="c-name" required maxlength="200"></label><label class="f">الهاتف مع رمز الدولة<input id="c-phone" placeholder="+970..." required></label><label class="f">واتساب مع رمز الدولة<input id="c-wa" placeholder="+970..." required></label><label><input type="checkbox" id="c-ok" required> أوافق على حفظ بيانات طلبي وفق سياسة الخصوصية.</label><button class="btn" type="submit">إرسال طلب العضوية</button></form><p id="account-note"></p><button class="btn" id="logout" type="button">تسجيل الخروج</button></div>';
+  document.querySelector('main').appendChild(panel);views.push(panel);
+  async function account(){var s=await client().auth.getUser();if(s.error||!s.data.user){location.hash='login';return;}var u=s.data.user;var q=await client().from('member_applications').select('full_name,status,membership_number,submitted_at').eq('auth_user_id',u.id).maybeSingle();if(q.error){$('#account-status').textContent='تعذر قراءة حالة الطلب.';return;}$('#account-status').textContent=q.data?'حالة العضوية: '+(statusLabels[q.data.status]||'قيد المراجعة')+(q.data.membership_number?' | رقم العضوية: '+q.data.membership_number:''):'أكمل طلب عضويتك بعد تأكيد البريد.';$('#completeForm').hidden=!!q.data;var m=u.user_metadata||{};$('#c-name').value=m.full_name||'';$('#c-phone').value=m.phone||'';$('#c-wa').value=m.whatsapp||'';}
+  async function submitApplication(name,p,w){var z=await client().rpc('submit_family_application',{p_name:name,p_phone:p,p_whatsapp:w,p_consent:true});if(z.error)throw Error('تعذر تقديم الطلب. تحقق من تأكيد البريد وصحة الأرقام.');}
+  $('#regForm').addEventListener('submit',async function(e){e.preventDefault();var b=this.querySelector('button[type=submit]');if(b.disabled)return;var name=$('#r-name').value.trim(),email=$('#r-mail').value.trim(),pw=$('#r-pw').value,p=phone($('#r-cc').value,$('#r-phone').value),w=same.checked?p:phone($('#r-wcc').value,$('#r-wa').value);if(name.length<4||name.length>200||!/^\+[0-9]{7,16}$/.test(p)||!/^\+[0-9]{7,16}$/.test(w)||!/^\S+@\S+\.\S+$/.test(email)||pw.length<10||pw!==$('#r-pw2').value||!$('#r-ok').checked)return show('#r-msg','راجع الاسم والأرقام والبريد وكلمة المرور والموافقة.',1);b.disabled=true;try{var z=await client().auth.signUp({email:email,password:pw,options:{emailRedirectTo:location.origin+location.pathname,data:{full_name:name,phone:p,whatsapp:w}}});if(z.error)throw Error('تعذر إنشاء الحساب. حاول لاحقًا أو استخدم تسجيل الدخول.');if(z.data.session&&z.data.user.email_confirmed_at){location.hash='account';await account();}else show('#r-msg','تحقق من بريدك لتأكيد الحساب، ثم سجل الدخول وأكمل طلب العضوية.',0);this.reset();syncWa();}catch(err){show('#r-msg',err.message,1);}finally{b.disabled=false;}});
+  $('#logForm').addEventListener('submit',async function(e){e.preventDefault();var b=this.querySelector('button[type=submit]');b.disabled=true;try{var z=await client().auth.signInWithPassword({email:$('#l-mail').value.trim(),password:$('#l-pw').value});if(z.error)throw Error('تعذر الدخول. تأكد من البيانات وتأكيد البريد.');location.hash='account';await account();}catch(err){show('#l-msg',err.message,1);}finally{$('#l-pw').value='';b.disabled=false;}});
+  $('#completeForm').addEventListener('submit',async function(e){e.preventDefault();var b=this.querySelector('button');b.disabled=true;try{await submitApplication($('#c-name').value.trim(),$('#c-phone').value.trim(),$('#c-wa').value.trim());$('#account-note').textContent='تم إرسال طلب العضوية للمراجعة.';await account();}catch(err){$('#account-note').textContent=err.message;}finally{b.disabled=false;}});
+  $('#logout').addEventListener('click',async function(){await client().auth.signOut();location.hash='home';});
+  var a=document.createElement('a');a.href='#account';a.textContent='حسابي';nav.appendChild(a);
+  window.addEventListener('hashchange',function(){if(location.hash==='#account')account().catch(()=>{$('#account-status').textContent='تعذر الاتصال.';});});
+  try{client().auth.getSession().then(z=>{if(z.data.session&&(location.hash==='#account'||location.hash===''||location.hash.indexOf('access_token=')>=0)){location.hash='account';account();}}).catch(()=>{});}catch(e){}
 })();
 </script>
 
