@@ -65,3 +65,36 @@ jobs:
       - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea
         with:
           category: /language:${{ matrix.language }}
+
+  dependency-review:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Audit the deployed SDK package dependency graph
+        run: |
+          set -eu
+          work=$(mktemp -d)
+          cd "$work"
+          npm init -y >/dev/null
+          npm install --package-lock-only --ignore-scripts --no-audit --save-exact @supabase/supabase-js@2.49.4
+          npm audit --audit-level=high
+      - name: Check candidate SDK browser bundle and report public integrity digests
+        if: always()
+        run: |
+          set -eu
+          work=$(mktemp -d)
+          curl --fail --silent --show-error --location --max-time 45 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js' -o "$work/supabase.js"
+          node --check "$work/supabase.js"
+          printf 'SDK candidate sha384-'
+          openssl dgst -sha384 -binary "$work/supabase.js" | openssl base64 -A
+          printf '\n'
+          curl --fail --silent --show-error --location --max-time 45 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js' -o "$work/qrcode.js"
+          node --check "$work/qrcode.js"
+          printf 'QRCode sha384-'
+          openssl dgst -sha384 -binary "$work/qrcode.js" | openssl base64 -A
+          printf '\n'

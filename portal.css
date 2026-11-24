@@ -378,3 +378,5 @@ html{padding-block:0!important;scroll-padding-top:0}
 
 /* Member tools and compact administration metrics */
 .family-admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin:16px 0}.family-admin-stats .card strong{font-size:2rem;line-height:1.25}.family-content-record{border-bottom:1px solid rgba(120,120,120,.25);padding:12px 0;overflow-wrap:anywhere}.family-content-record:last-child{border:0}.family-source{font-size:.9em;opacity:.8}.family-calendar{border:1px solid rgba(120,120,120,.25);border-radius:12px;padding:14px;margin:12px 0}.family-calendar-row{display:flex;flex-direction:column;gap:4px;padding:10px 0;border-bottom:1px solid rgba(120,120,120,.2)}.family-calendar-row time{font-size:.9em;opacity:.85}
+
+.family-tree-branch summary{font-weight:700;cursor:pointer;padding:6px 0}.family-tree-branch summary:focus-visible{outline:2px solid currentColor;outline-offset:3px}

@@ -897,9 +897,10 @@
           Object.keys(rels).forEach(k => {
             var matches = entries.filter(x => x.relationship === k);
             if (matches.length) {
-              var branch = make('div', branches);
-              branch.className = 'card';
-              make('h3', branch, rels[k]);
+              var branch = make('details', branches);
+              branch.className = 'card family-tree-branch';
+              branch.open = true;
+              make('summary', branch, rels[k] + ' (' + matches.length + ')');
               matches.forEach(x => make('p', branch, x.relative_name));
             }
           });
@@ -976,8 +977,13 @@
           var unread = ns.filter(x => !x.read_at).length;
           make('p', inbox, 'غير مقروءة: ' + unread);
           if (!ns.length) make('p', inbox, 'لا إشعارات حتى الآن.');
+          const noticeFilter = selectField(inbox, 'عرض الإشعارات', 'notice_filter', {all:'الكل',unread:'غير المقروءة فقط',read:'المقروءة فقط'});
+          const noticeRows = [];
+          noticeFilter.onchange = () => noticeRows.forEach(x => { x.el.hidden = noticeFilter.value !== 'all' && (noticeFilter.value === 'unread' ? x.read : !x.read); });
           ns.forEach(x => {
             var c = section(inbox, x.title);
+            noticeRows.push({el:c,read:Boolean(x.read_at)});
+            make('time', c, new Date(x.created_at).toLocaleString('ar'));
             make('p', c, x.body);
             make('p', c, x.read_at ? 'مقروء' : 'جديد');
             if (!x.read_at) action(c, 'تحديد كمقروء', async () => {
