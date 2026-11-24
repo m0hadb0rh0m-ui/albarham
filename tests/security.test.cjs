@@ -46,3 +46,18 @@ test('service worker uses no-store, ignores out-of-scope and non-navigation requ
   assert.equal(response.headers.get('cache-control'), 'no-store');
   assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/);
 });
+
+test('live header assessment does not treat missing headers as enabled', () => {
+  const source = js.slice(js.indexOf('function assessSecurityHeaders('), js.indexOf('function mountInfrastructureStatus('));
+  const check = vm.runInNewContext('(' + source.trim() + ')');
+  assert.equal(check(new Headers()).filter(x => x[1]).length, 0);
+  const response = new Headers({
+    'Content-Security-Policy': "default-src 'self'; frame-ancestors 'none'",
+    'Strict-Transport-Security': 'max-age=31536000',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  });
+  assert.equal(check(response).filter(x => x[1]).length, 6);
+  assert.equal(check(new Headers({'Strict-Transport-Security':'max-age=0'}))[2][1], false);
+});
