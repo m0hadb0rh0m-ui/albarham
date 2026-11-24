@@ -50,7 +50,7 @@ test('service worker uses no-store, ignores out-of-scope and non-navigation requ
 });
 
 test('live header assessment does not treat missing headers as enabled', () => {
-  const source = js.slice(js.indexOf('function assessSecurityHeaders('), js.indexOf('function mountInfrastructureStatus('));
+  const source = js.slice(js.indexOf('function assessSecurityHeaders('), js.indexOf('function verifiedCheckState('));
   const check = vm.runInNewContext('(' + source.trim() + ')');
   assert.equal(check(new Headers()).filter(x => x[1]).length, 0);
   const response = new Headers({
