@@ -114,3 +114,19 @@ test('password exposure screen sends only the padded hash prefix and rejects kno
   assert.equal(await check('test-password',async()=>{throw Error('offline')},cryptoApi),'unavailable');
   assert.equal(await check('test-password',async()=>({ok:true,text:async()=>'<html>'}),cryptoApi),'unavailable');
 });
+
+test('release keeps footer identity and deferred scripts in dependency order', () => {
+  assert.match(html, /class="footer-wordmark" lang="ar">آل برهم/);
+  assert.match(html, /class="footer-english" lang="en" dir="ltr">Albarham 2026/);
+  assert.match(html, /class="footer-signature"/);
+  const scripts = Array.from(html.matchAll(/<script[^>]*src="([^"]+)"[^>]*>/g));
+  assert.equal(scripts.length,4);
+  assert.ok(scripts.every(x => x[0].includes('defer')));
+  assert.ok(scripts[0][1].includes('supabase'));
+  assert.ok(scripts[3][1].includes('portal.js'));
+  const css = fs.readFileSync('portal.css','utf8');
+  assert.match(css,/--glass-surface:/);
+  assert.match(css,/prefers-reduced-motion/);
+  assert.match(js,/new IntersectionObserver/);
+  assert.match(js,/im.fetchPriority = priority \? 'high' : 'low'/);
+});
