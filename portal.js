@@ -2074,26 +2074,42 @@
     ];
   }
 
+  function verifiedCheckState(report, required) {
+    const checks = Array.isArray(report?.checks) ? report.checks : [];
+    const matching = required.map(id => checks.find(x => x.id === id));
+    if (matching.some(x => x?.state === 'fail')) return 'fail';
+    if (matching.every(x => x?.state === 'pass')) return 'pass';
+    return 'warn';
+  }
+
   function mountInfrastructureStatus(parent) {
     const panel = section(parent, 'طبقات الحماية — ما يعمل وما ينقص');
     make('p', panel, 'حالة الخدمات الخارجية لا تُعدّ مفعّلة لمجرد وجود ملف إعداد. افحصها بعد الربط والنشر.');
     const items = [
-      ['MFA / Zero Trust', 'تفرض قاعدة البيانات AAL2 على الإدارة؛ راجع نتيجة فحص قاعدة البيانات.', 'pass'],
-      ['RLS / RBAC / تخزين خاص', 'يمكن التحقق منها في الفحص المباشر.', 'warn'],
-      ['DevSecOps / CodeQL', 'راجع نتيجة فحص الفرع المنشور أدناه.', 'warn'],
-      ['WAF / WAAP / DDoS / Bot Management', 'ربط مزود حماية وتطبيق قواعده مطلوب.', 'warn'],
-      ['CAPTCHA (hCaptcha / Turnstile)', window.familyCaptcha.enabled ? 'مفتاح عام موجود؛ تحقق من فرض CAPTCHA في Auth.' : 'التكامل جاهز؛ يلزم مفتاح موقع وإعداد Auth.', 'warn'],
-      ['Passkeys / FIDO2', 'يلزم ترقية SDK وإعداد المصادقة واختبارها.', 'warn'],
-      ['PQC / RASP', 'يلزم دعم مزود TLS أو بيئة تشغيل خلفية مناسبة.', 'warn'],
-      ['SIEM / XDR', 'سجل تدقيق داخلي موجود؛ يلزم تصدير آمن لمنصة مراقبة وتنبيه.', 'warn'],
-      ['Immutable Backups', 'يلزم نسخ مستقلة محمية واختبار استعادة للبيانات والملفات.', 'warn'],
-      ['كلمات المرور المسربة', 'تحقق من تفعيل الفحص في إعدادات Supabase Auth.', 'warn']
+      ['mfa','MFA / Zero Trust','تفرض قاعدة البيانات AAL2 على الإدارة. يلزم الفحص للتحقق من الجلسة الحالية.','warn','بانتظار الفحص'],
+      ['data','RLS / RBAC / تخزين خاص','فحص مباشر للجداول والسجلات الخاصة ودوال الإدارة ومخازن الملفات.','warn','بانتظار الفحص'],
+      ['ci','DevSecOps / CodeQL / SRI','يُقرأ آخر تشغيل للفرع الرئيسي من GitHub.','warn','بانتظار النتيجة'],
+      ['edge','WAF / WAAP / DDoS / Bot Management','تحتاج حماية خارجية على مزود الاستضافة، وحماية API بصورة مستقلة.','warn','غير مؤكد'],
+      ['captcha','CAPTCHA (hCaptcha / Turnstile)',window.familyCaptcha.enabled ? 'مفتاح عام موجود؛ يلزم إثبات فرض CAPTCHA في Auth.' : 'التكامل جاهز برمجيًا؛ لا يوجد مفتاح موقع مفعّل.','warn',window.familyCaptcha.enabled ? 'بانتظار التحقق' : 'غير مفعّل'],
+      ['passkeys','Passkeys / FIDO2','تمت ترقية SDK؛ يلزم إعداد Passkeys واختبار المصادقة والاستعادة.','warn','غير مفعّل'],
+      ['pqc','PQC / RASP','يلزم دعم مزود TLS أو بيئة تشغيل خلفية مناسبة.','warn','غير مؤكد'],
+      ['siem','SIEM / XDR','سجل التدقيق الداخلي ليس SIEM؛ يلزم مزود تنبيهات ومراقبة مستقل.','warn','غير متكامل'],
+      ['backup','Immutable Backups','يلزم وجهة مستقلة ذات قفل احتفاظ واختبار استعادة البيانات والملفات.','warn','غير مؤكد'],
+      ['password','كلمات المرور المسربة','كان الفحص معطّلًا في آخر مراجعة لمستشار Supabase بتاريخ 2026-11-24؛ تحقّق من Auth.','warn','غير مفعّل عند المراجعة']
     ];
-    for (const [name, detail, status] of items) {
+    const marks = new Map();
+    for (const [id,name,detail,status,statusLabel] of items) {
       const row = make('div', panel); row.className = 'scan-result';
       const label = make('div', row); make('strong', label, name); make('small', label, detail);
-      const mark = make('span', row, status === 'pass' ? 'مفعّل' : 'تحقق / إعداد'); mark.className = 'scan-state ' + status;
+      const mark = make('span', row, statusLabel); mark.className = 'scan-state ' + status;
+      marks.set(id,mark);
     }
+    const update = (id,state,label) => {
+      const mark = marks.get(id);
+      if (!mark) return;
+      mark.className = 'scan-state ' + state;
+      mark.textContent = label;
+    };
     const links = section(parent, 'استكمال إعدادات الحماية');
     for (const [name, url] of [
       ['Vercel — إعداد الحماية والاستضافة', 'https://vercel.com/dashboard'],
@@ -2104,6 +2120,7 @@
     ]) {
       const a = make('a', links, name); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'btn btn-ghost';
     }
+    return update;
   }
 
   async function mountSecurityScanner(parent) {
@@ -2119,9 +2136,15 @@
       try {
         var result = ok(await client().rpc('family_run_security_scan'));
         renderScan(results, result);
+        for (const [id, required] of [['mfa',['mfa','session']],['data',['rls','private_tables','admin_rpc','storage','upload_limits']]]) {
+          const state = verifiedCheckState(result, required);
+          updateInfrastructure(id,state,state === 'pass' ? 'اجتاز الفحص' : state === 'fail' ? 'خلل مكتشف' : 'يحتاج مراجعة');
+        }
         msg.textContent = 'اكتمل فحص قاعدة البيانات.';
         await refreshHistory();
       } catch (e) {
+        updateInfrastructure('mfa','warn','تعذر التحقق');
+        updateInfrastructure('data','warn','تعذر التحقق');
         msg.textContent = 'تعذر إجراء الفحص. تحقق من الاتصال وصلاحية الإدارة.';
       } finally {
         run.disabled = false;
@@ -2163,7 +2186,7 @@
       } finally { headerBtn.disabled = false; }
     });
     headerBtn.className = 'btn btn-dark';
-    mountInfrastructureStatus(parent);
+    const updateInfrastructure = mountInfrastructureStatus(parent);
     var gh = section(parent, 'نتائج فحص الكود في GitHub');
     var ghMsg = make('p', gh, 'يمكنك قراءة آخر نتيجة متاحة للفرع الرئيسي من سجل GitHub Actions.');
     ghMsg.setAttribute('role', 'status');
@@ -2186,6 +2209,8 @@
           ghMsg.textContent = 'لا يوجد تشغيل ظاهر للفحص حتى الآن.';
           return;
         }
+        const ciState = item.status === 'completed' ? (item.conclusion === 'success' ? 'pass' : item.conclusion === 'failure' ? 'fail' : 'warn') : 'warn';
+        updateInfrastructure('ci',ciState,ciState === 'pass' ? 'نجح آخر تشغيل' : ciState === 'fail' ? 'فشل آخر تشغيل' : 'غير مكتمل');
         var labels = {
           success: 'نجح',
           failure: 'فشل',
@@ -2225,6 +2250,7 @@
         link.rel = 'noopener noreferrer';
         link.className = 'more';
       } catch (e) {
+        updateInfrastructure('ci','warn','تعذر التحقق');
         ghMsg.textContent = 'تعذر إكمال قراءة تفاصيل GitHub من المتصفح. لا يمكن تأكيد نجاح الفحص.';
       } finally {
         ghBtn.disabled = false;

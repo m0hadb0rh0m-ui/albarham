@@ -88,3 +88,12 @@ test('pinned external libraries carry SRI and anonymous CORS', () => {
   assert.match(js, /script\.integrity = 'sha384-[A-Za-z0-9+/]{64}'/);
   assert.match(js, /script\.crossOrigin = 'anonymous'/);
 });
+
+test('security center distinguishes verified, failed and missing checks', () => {
+  const src = js.slice(js.indexOf('function verifiedCheckState('), js.indexOf('function mountInfrastructureStatus('));
+  const check = vm.runInNewContext('(' + src.trim() + ')');
+  assert.equal(check({checks:[{id:'a',state:'pass'}]},['a']), 'pass');
+  assert.equal(check({checks:[{id:'a',state:'pass'}]},['a','b']), 'warn');
+  assert.equal(check({checks:[{id:'a',state:'fail'}]},['a','b']), 'fail');
+  assert.equal(check(null,['a']), 'warn');
+});
