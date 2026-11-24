@@ -300,6 +300,68 @@ footer.site a:hover{color:#f0d5a0}
 .home-intro .wrap{padding-block:clamp(18px,3vw,34px)}.home-intro h1{font-size:clamp(25px,4vw,40px);line-height:1.45;margin:4px 0}.home-intro h1 span{color:#c4a56a}.home-intro p{color:#e0e9e2;margin:0;font-size:15px}.home-intro .greet{font-size:13px}.home-news{padding-block:24px 12px}.home-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.home-section-head h2,.home-services h2{font-size:clamp(22px,3vw,30px);margin:0;display:flex;gap:9px;align-items:center}.home-section-head svg{color:var(--gold-ink)}.home-news-card{background:linear-gradient(125deg,#09251e,#205344);color:#fffaf0;border:1px solid #c4a56a;border-radius:19px;padding:clamp(20px,4vw,36px);box-shadow:var(--shadow-hover);position:relative;overflow:hidden}.home-news-label{display:inline-block;background:#e8d2a0;color:#123b30;border-radius:20px;padding:4px 13px;font-weight:700;font-size:13px}.home-news-card h3{font:700 clamp(26px,4vw,39px)/1.5 var(--display);margin:12px 0;color:#fffaf0}.home-news-card p{max-width:75ch;color:#e5e8e3;line-height:1.9;margin:0 0 18px;font-size:16px}.home-services{padding-block:18px 35px}.home-services h2{margin-bottom:12px}.home-services .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.home-services .card{padding:18px}.home-services .card h3{font-size:21px}.home-services .card p{font-size:14px}.home-services .card .more{display:none}@media(max-width:600px){.home-intro .wrap{padding-block:14px}.home-intro h1{font-size:25px}.home-news{padding-block:16px 8px}.home-news-card{padding:18px}.home-news-card h3{font-size:28px}.home-news-card p{font-size:15px}.home-services .grid{grid-template-columns:1fr}.home-services .card{padding:12px 15px}.home-services .card .ic{float:right;margin-left:12px}.home-services .card h3{margin:0 0 3px}.home-services .card p{margin:0}.home-news-card .btn{width:100%}}
 .news-photo{display:block;width:100%;max-height:440px;object-fit:contain;background:var(--band);border-radius:14px;margin-bottom:18px}.mobile-dock{display:none}@media(max-width:700px){.mobile-dock{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--surface);border-top:1px solid var(--gold);padding:7px 5px calc(7px + env(safe-area-inset-bottom));box-shadow:0 -5px 20px #09251e12}.mobile-dock a{display:grid;justify-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--fg);min-height:44px}.mobile-dock svg{color:var(--gold-ink)}body{padding-bottom:72px}}@media print{.mobile-dock{display:none!important}}
 .news-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 20px}.news-gallery[data-count="1"]{grid-template-columns:1fr}.news-gallery.news-cover[data-count="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}.news-gallery-item{display:block;overflow:hidden;border:1px solid #c4a56a;border-radius:12px;background:#123b30;min-width:0}.news-gallery-item img{display:block;width:100%;height:100%;aspect-ratio:4/3;object-fit:contain}.news-edit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin:12px 0}.news-edit-photo{border:1px solid var(--gold);border-radius:12px;padding:8px}.news-edit-photo img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:var(--band);border-radius:8px}.news-edit-photo label{display:flex;align-items:center;gap:6px;margin:8px 0;font-size:13px}.news-edit-photo input[type=checkbox]{width:auto}.news-edit-photo .btn{width:100%;min-height:36px;padding:5px 10px}@media(max-width:600px){.news-gallery.news-cover[data-count="3"]{grid-template-columns:repeat(2,minmax(0,1fr))}.news-gallery.news-cover[data-count="3"] .news-gallery-item:first-child{grid-column:1/-1}.news-gallery{gap:6px}}
+
+/* Compact mobile layout, release 20 */
+html{padding-block:0!important;scroll-padding-top:0}
+@media(max-width:700px){
+  body{font-size:15px;line-height:1.65;padding-bottom:50px}
+  .topline{display:none}
+  .wrap{padding-inline:14px}
+  header.site .wrap{gap:10px;padding-block:7px;min-height:52px}
+  header.site .brand{gap:8px}
+  header.site .brand b{font-size:25px}
+  header.site .brand small{font-size:8px;letter-spacing:.12em}
+  header.site .mark{width:38px;height:38px;box-shadow:none}
+  header.site .mark svg{width:20px;height:20px}
+  header.site .menu-btn{padding:6px 10px;font-size:13px;min-height:36px;border-radius:10px}
+  header.site.open nav.main{max-height:48vh}
+  .phero .wrap{padding-block:15px}
+  .phero h1{font-size:29px;line-height:1.4;margin:0 0 3px}
+  .phero p{font-size:13px;line-height:1.65;margin:0}
+  .phero .eyebrow{font-size:11px;margin-bottom:4px}
+  .sec{padding-block:16px}
+  .card{padding:14px;border-radius:15px}
+  .card h2{font-size:22px;margin-bottom:8px}
+  .card h3{font-size:20px;margin:7px 0 5px}
+  .btn{font-size:13px;padding:9px 13px;min-height:40px;justify-content:center;border-radius:10px}
+  #v-news .phero .wrap{padding-block:13px}
+  #v-news .sec{padding-block:12px 20px}
+  #public-news-list>.btn{min-height:34px;padding:5px 12px;font-size:12px;margin:0 0 8px}
+  #public-news-list .lux-news-card{margin:8px auto 14px;padding:14px 13px;border-top-width:3px;border-radius:16px}
+  #public-news-list .lux-badge{font-size:11px;padding:4px 11px}
+  #public-news-list .lux-title{font-size:25px;line-height:1.5;margin:9px 0 14px}
+  #public-news-list .lux-news-card p{font-size:15px;line-height:1.85}
+  #public-news-list .lux-verse-box{padding:14px 10px;margin-bottom:14px;border-radius:12px}
+  #public-news-list .lux-bismillah{font-size:19px}
+  #public-news-list .lux-verse{font-size:20px;line-height:1.85}
+  #public-news-list .lux-section-title{font-size:21px;margin:16px 0 10px;padding-bottom:7px}
+  #public-news-list .lux-members{gap:7px;margin-bottom:15px}
+  #public-news-list .lux-members li{font-size:15px;padding:9px;gap:8px}
+  #public-news-list .lux-members li:before{width:25px;height:25px;font-size:12px}
+  .home-intro .wrap{padding-block:10px}
+  .home-intro h1{font-size:22px}
+  .home-intro p,.home-intro .greet{font-size:12px}
+  .home-news{padding-block:12px 8px}
+  .home-news-card{padding:14px}
+  .home-news-card h3{font-size:24px;line-height:1.5;margin:8px 0}
+  .home-news-card p{font-size:14px;line-height:1.7;margin-bottom:10px}
+  .home-services{padding-block:12px 20px}
+  .mobile-dock{height:50px;min-height:50px;padding:0 4px;background:#fffefa;border-top:1px solid #c4a56a;box-shadow:0 -2px 9px #09251e0d;align-items:stretch}
+  .mobile-dock a{height:49px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px 0;font-size:11px;line-height:1.25;white-space:nowrap}
+  .mobile-dock a svg{width:19px;height:19px;flex:none}
+  .mobile-dock a[aria-current=page]{color:#123b30;background:#f1ebdb;border-radius:8px}
+  .mobile-dock a[aria-current=page] svg{color:#123b30}
+  footer.site{padding-top:18px}
+  footer.site .fg{gap:14px;padding-bottom:12px}
+  footer.site .copy{padding-block:8px}
+}
+@media(max-width:700px) and (display-mode:standalone){
+  header.site{padding-top:env(safe-area-inset-top,0px)}
+  .mobile-dock{height:calc(50px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+  body{padding-bottom:calc(50px + env(safe-area-inset-bottom,0px))}
+}
+@media print{body{padding-bottom:0!important}.mobile-dock{display:none!important}}
+
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -624,7 +686,7 @@ footer.site a:hover{color:#f0d5a0}
   window.addEventListener('hashchange',extraRoute);
   var contactLink=make('a',document.querySelector('#v-contact .sec .wrap'),'مراسلة إدارة العائلة');contactLink.href='mailto:albarham.inc@gmail.com';contactLink.className='btn btn-gold';
   var reset=newView('reset','استعادة كلمة المرور'),resetBox=make('div',reset);resetBox.className='card';var resetMsg=make('p',resetBox);var resetForm=make('form',resetBox),resetInput=field(resetForm,'البريد الإلكتروني','email','email',254);resetInput.required=true;formAction(resetForm,'إرسال رابط الاستعادة',async()=>{var z=await client().auth.resetPasswordForEmail(resetInput.value.trim(),{redirectTo:location.origin+location.pathname+'?page=reset'});if(z.error)throw z.error;resetMsg.textContent='إذا كان الحساب موجودًا فستصلك رسالة الاستعادة.';});var changeForm=make('form',resetBox),newPass=field(changeForm,'كلمة المرور الجديدة','password','password',128);newPass.required=true;newPass.minLength=10;changeForm.hidden=true;formAction(changeForm,'حفظ كلمة المرور الجديدة',async()=>{var z=await client().auth.updateUser({password:newPass.value});if(z.error)throw z.error;changeForm.reset();location.hash='account';});function showReset(){resetMsg.textContent=changeForm.hidden?'أدخل بريد حسابك لاستعادة كلمة المرور.':'اختر كلمة مرور جديدة.';}var forgot=make('a',$('#logForm'),'نسيت كلمة المرور؟');forgot.href='#reset';forgot.className='more';try{client().auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){resetForm.hidden=true;changeForm.hidden=false;location.hash='reset';resetMsg.textContent='اختر كلمة مرور جديدة.';}});}catch(e){}
-  var dock=document.createElement('nav');dock.className='mobile-dock';dock.setAttribute('aria-label','التنقل السريع');[['home','الرئيسية','landmark'],['news','الأخبار','file'],['heritage','العائلة','users'],['account','حسابي','shield']].forEach(x=>{var l=make('a',dock);l.href='#'+x[0];l.innerHTML='<svg width="22" height="22" aria-hidden="true"><use href="#i-'+x[2]+'"/></svg>';make('span',l,x[1]);});document.body.appendChild(dock);
+  var dock=document.createElement('nav');dock.className='mobile-dock';dock.setAttribute('aria-label','التنقل السريع');[['home','الرئيسية','landmark'],['news','الأخبار','file'],['heritage','العائلة','users'],['account','حسابي','shield']].forEach(x=>{var l=make('a',dock);l.href='#'+x[0];l.innerHTML='<svg width="22" height="22" aria-hidden="true"><use href="#i-'+x[2]+'"/></svg>';make('span',l,x[1]);});document.body.appendChild(dock);function markDock(){var r=(location.hash||'#home').slice(1).split('/')[0];if(['login','register','reset','member-hub','member-services-admin','news-admin','admin','certificate','verify','membership'].includes(r))r='account';if(['history','tree','archive','stories'].includes(r))r='heritage';if(r==='events')r='news';Array.from(dock.querySelectorAll('a')).forEach(a=>{if(a.getAttribute('href')==='#'+r)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});}window.addEventListener('hashchange',markDock);markDock();
   var headerActs=document.querySelector('header.site .acts'),guestLogin=headerActs.querySelector('a[href="#login"]'),guestRegister=headerActs.querySelector('a[href="#register"]');var signedAccount=make('a',headerActs,'حسابي');signedAccount.href='#account';signedAccount.className='btn btn-gold sm';signedAccount.hidden=true;
   function updateHeader(session){guestLogin.hidden=!!session;guestRegister.hidden=true;signedAccount.hidden=!session;document.querySelectorAll('[data-guest-entry]').forEach(a=>{a.href=session?'#account':'#login';a.textContent=session?'حسابي':'دخول / إنشاء حساب';});}
   var authReady=false, recoveredSession=null;function clearPrivate(){hubBody.replaceChildren();adminRows.replaceChildren();adminServiceBody.replaceChildren();newsEditorBody.replaceChildren();certBody.replaceChildren();$('#member-welcome').textContent='حساب العضو';$('#member-email').textContent='';$('#member-number').textContent='—';$('#account-status').textContent='';$('#completeForm').reset();$('#completeForm').hidden=true;hubLink.hidden=true;adminShortcut.hidden=true;printButton.hidden=true;}guestLogin.hidden=true;signedAccount.hidden=true;
@@ -634,4 +696,4 @@ footer.site a:hover{color:#f0d5a0}
 })();
 </script>
 
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=19').catch(()=>{});}let installPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;const b=document.getElementById('install-app');if(b)b.hidden=false;});document.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='install-app';b.className='btn btn-gold sm';b.textContent='تثبيت تطبيق العائلة';b.hidden=!installPrompt;b.onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;b.hidden=true;}};document.querySelector('footer.site .copy').appendChild(b);});</script></body></html>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=20').catch(()=>{});}let installPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;const b=document.getElementById('install-app');if(b)b.hidden=false;});document.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='install-app';b.className='btn btn-gold sm';b.textContent='تثبيت تطبيق العائلة';b.hidden=!installPrompt;b.onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;b.hidden=true;}};document.querySelector('footer.site .copy').appendChild(b);});</script></body></html>
