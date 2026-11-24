@@ -661,6 +661,8 @@ footer.site{background:var(--green-deep);color:var(--on-green2);padding-top:48px
     hdr.classList.remove('open');btn.setAttribute('aria-expanded','false');
     window.scrollTo(0,0);
   }
+  // Explicit entry via query string works even in browsers that strip URL fragments.
+  if(new URLSearchParams(location.search).get('page')==='register' && !/access_token=|error=|code=/.test(location.hash)){var entry=new URL(location.href);entry.searchParams.delete('page');entry.hash='register';history.replaceState(null,'',entry.toString());}
   window.addEventListener('hashchange',route);route();
   btn.addEventListener('click',function(){var o=hdr.classList.toggle('open');btn.setAttribute('aria-expanded',o)});
 
@@ -718,6 +720,8 @@ footer.site{background:var(--green-deep);color:var(--on-green2);padding-top:48px
   function extraRoute(){var hash=location.hash.slice(1);if(hash==='admin')loadAdmin();if(hash==='certificate')loadCertificate();if(hash==='verify'||hash.startsWith('verify/')){if(hash.startsWith('verify/')){tokenInput.value=hash.slice(7);verifyToken(tokenInput.value);}else verifyBody.textContent='امسح رمز QR أو أدخل رمز التحقق.';}}
   window.addEventListener('hashchange',extraRoute);route();extraRoute();
   var a=document.createElement('a');a.href='#account';a.textContent='حسابي';nav.appendChild(a);
+  var registerLink=document.createElement('a');registerLink.href='?page=register';registerLink.textContent='إنشاء حساب جديد';nav.appendChild(registerLink);
+  var loginLink=document.createElement('a');loginLink.href='#login';loginLink.textContent='تسجيل الدخول';nav.appendChild(loginLink);
   window.addEventListener('hashchange',function(){if(location.hash==='#account')account().catch(()=>{$('#account-status').textContent='تعذر الاتصال.';});});
   try{client().auth.getSession().then(z=>{if(z.data.session&&(location.hash==='#account'||location.hash===''||location.hash.indexOf('access_token=')>=0)){location.hash='account';account();}}).catch(()=>{});}catch(e){}
 })();
